@@ -1,6 +1,6 @@
 .profile-container {
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -10,12 +10,12 @@
 
 .profile-header h1 {
   font-size: 32px;
-  color: #333;
+  color: #0F172A;
   margin: 0 0 10px 0;
 }
 
 .profile-header p {
-  color: #666;
+  color: #475569;
   margin: 0;
   font-size: 16px;
 }
@@ -31,9 +31,9 @@
 /* Sidebar */
 .profile-sidebar {
   background: white;
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 30px 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   height: fit-content;
   position: sticky;
   top: 20px;
@@ -43,7 +43,7 @@
   text-align: center;
   margin-bottom: 30px;
   padding-bottom: 30px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #E2E8F0;
 }
 
 .avatar-placeholder {

@@ -1,6 +1,6 @@
 .cloudusage-container {
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -11,12 +11,12 @@
 
 .cloudusage-header h1 {
   font-size: 32px;
-  color: #333;
+  color: #0F172A;
   margin: 0 0 10px 0;
 }
 
 .cloudusage-header p {
-  color: #666;
+  color: #475569;
   margin: 0;
   font-size: 16px;
 }
@@ -36,16 +36,16 @@
 
 .upload-box {
   background: white;
-  border: 2px dashed #00d4ff;
-  border-radius: 12px;
+  border: 2px dashed #2563EB;
+  border-radius: 16px;
   padding: 40px;
   text-align: center;
   transition: all 0.3s ease;
 }
 
 .upload-box:hover {
-  border-color: #0099cc;
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.15);
+  border-color: #1E40AF;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.15);
 }
 
 .upload-label {
@@ -65,40 +65,41 @@
 }
 
 .upload-label h3 {
-  color: #333;
+  color: #0F172A;
   margin: 15px 0 5px 0;
   font-size: 20px;
 }
 
 .upload-label p {
-  color: #666;
+  color: #475569;
   margin: 5px 0;
   font-size: 14px;
 }
 
 .upload-label .file-types {
-  color: #999;
+  color: #94A3B8;
   font-size: 12px;
   margin-top: 10px;
   margin-bottom: 20px;
 }
 
 .upload-btn {
-  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  background: #2563EB;
   color: white;
   border: none;
   padding: 12px 30px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .upload-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+  background: #1E40AF;
 }
 
 .upload-btn:disabled {
@@ -109,21 +110,21 @@
 .upload-message {
   margin-top: 15px;
   padding: 12px 15px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 500;
   animation: slideIn 0.3s ease;
 }
 
 .upload-message.success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #15803D;
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .upload-message.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #B91C1C;
+  border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
 @keyframes slideIn {

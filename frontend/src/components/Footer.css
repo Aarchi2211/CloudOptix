@@ -1,9 +1,9 @@
 .footer {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
+  background: #1E293B;
+  color: #ffffff;
   padding: 2rem 0;
   margin-top: auto;
-  border-top: 1px solid #333;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
 }
 
@@ -17,17 +17,18 @@
 .footer-text {
   margin: 0;
   font-size: 0.95rem;
-  color: #b0b0b0;
+  color: #cbd5e1;
 }
 
 .footer-text a {
-  color: #00d4ff;
+  color: #2563EB;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer-text a:hover {
-  color: #00fff8;
+  color: #3B82F6;
+  text-decoration: underline;
 }
 
 /* Responsive Design */

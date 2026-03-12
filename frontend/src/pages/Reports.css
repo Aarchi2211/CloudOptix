@@ -1,6 +1,6 @@
 .reports-container {
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -10,12 +10,12 @@
 
 .reports-header h1 {
   font-size: 32px;
-  color: #333;
+  color: #0F172A;
   margin: 0 0 10px 0;
 }
 
 .reports-header p {
-  color: #666;
+  color: #475569;
   margin: 0;
   font-size: 16px;
 }
@@ -24,8 +24,8 @@
 .report-controls {
   background: white;
   padding: 25px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin-bottom: 30px;
   display: flex;
   justify-content: space-between;

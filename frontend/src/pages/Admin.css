@@ -1,6 +1,6 @@
 .admin-container {
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -10,12 +10,12 @@
 
 .admin-header h1 {
   font-size: 32px;
-  color: #333;
+  color: #0F172A;
   margin: 0 0 10px 0;
 }
 
 .admin-header p {
-  color: #666;
+  color: #475569;
   margin: 0;
   font-size: 16px;
 }
@@ -31,22 +31,22 @@
 .nav-btn {
   padding: 12px 25px;
   background: white;
-  border: 2px solid #ddd;
-  border-radius: 6px;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: #475569;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .nav-btn:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #2563EB;
+  color: #2563EB;
 }
 
 .nav-btn.active {
-  background: #667eea;
+  background: #2563EB;
   color: white;
   border-color: #667eea;
 }

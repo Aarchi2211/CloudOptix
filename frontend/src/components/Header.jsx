@@ -26,7 +26,6 @@ export default function Header({ onLogout }) {
         {/* Logo / Project Name */}
         <div className="header-logo">
           <img src={logo} alt="CloudOptix Logo" className="logo-image" />
-          <h1>CloudOptix</h1>
         </div>
 
         {/* Navigation Links */}

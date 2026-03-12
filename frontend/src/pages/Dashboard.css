@@ -1,6 +1,6 @@
 .dashboard-container {
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -11,12 +11,12 @@
 
 .dashboard-header h1 {
   font-size: 32px;
-  color: #333;
+  color: #0F172A;
   margin: 0 0 10px 0;
 }
 
 .dashboard-header p {
-  color: #666;
+  color: #475569;
   margin: 0;
   font-size: 16px;
 }
@@ -35,8 +35,8 @@
 .summary-card {
   background: white;
   padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: flex-start;
   gap: 20px;
@@ -45,20 +45,20 @@
 }
 
 .summary-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .summary-card.blue {
-  border-left-color: #667eea;
+  border-left-color: #2563EB;
 }
 
 .summary-card.green {
-  border-left-color: #26a65b;
+  border-left-color: #22C55E;
 }
 
 .summary-card.red {
-  border-left-color: #e74c3c;
+  border-left-color: #DC2626;
 }
 
 .card-icon {
@@ -72,7 +72,7 @@
 
 .card-content h3 {
   margin: 0 0 8px 0;
-  color: #666;
+  color: #475569;
   font-size: 14px;
   font-weight: 500;
   text-transform: uppercase;
@@ -82,12 +82,12 @@
   margin: 0 0 5px 0;
   font-size: 28px;
   font-weight: 700;
-  color: #333;
+  color: #0F172A;
 }
 
 .card-change {
   font-size: 12px;
-  color: #999;
+  color: #94A3B8;
 }
 
 /* Charts Section */
@@ -101,13 +101,13 @@
 .chart-container {
   background: white;
   padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .chart-container h2 {
   margin: 0 0 20px 0;
-  color: #333;
+  color: #0F172A;
   font-size: 18px;
 }
 
@@ -115,15 +115,15 @@
 .alerts-section {
   background: white;
   padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   /* no bottom margin to avoid extra space below the alerts list */
   margin-bottom: 0;
 }
 
 .alerts-section h2 {
   margin: 0 0 20px 0;
-  color: #333;
+  color: #0F172A;
   font-size: 18px;
 }
 
@@ -149,39 +149,39 @@
 }
 
 .alert-item.critical {
-  border-left-color: #e74c3c;
-  background-color: #fdeaea;
+  border-left-color: #DC2626;
+  background-color: rgba(220, 38, 38, 0.05);
 }
 
 .alert-item.warning {
-  border-left-color: #f39c12;
-  background-color: #fef5e7;
+  border-left-color: #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
 }
 
 .alert-item.info {
-  border-left-color: #3498db;
-  background-color: #ebf5fb;
+  border-left-color: #2563EB;
+  background-color: rgba(37, 99, 235, 0.05);
 }
 
 .alert-indicator {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #999;
+  background-color: #94A3B8;
   flex-shrink: 0;
 }
 
 .alert-item.critical .alert-indicator {
-  background-color: #e74c3c;
+  background-color: #DC2626;
   animation: pulse 2s infinite;
 }
 
 .alert-item.warning .alert-indicator {
-  background-color: #f39c12;
+  background-color: #F59E0B;
 }
 
 .alert-item.info .alert-indicator {
-  background-color: #3498db;
+  background-color: #2563EB;
 }
 
 @keyframes pulse {
@@ -206,19 +206,19 @@
 
 .alert-header h4 {
   margin: 0;
-  color: #333;
+  color: #0F172A;
   font-size: 14px;
   font-weight: 600;
 }
 
 .alert-time {
-  color: #999;
+  color: #94A3B8;
   font-size: 12px;
 }
 
 .alert-resource {
   margin: 0;
-  color: #666;
+  color: #475569;
   font-size: 12px;
 }
 
@@ -228,7 +228,7 @@
 
 .btn-small {
   padding: 6px 12px;
-  background-color: #667eea;
+  background-color: #2563EB;
   color: white;
   border: none;
   border-radius: 4px;
@@ -238,7 +238,7 @@
 }
 
 .btn-small:hover {
-  background-color: #764ba2;
+  background-color: #1E40AF;
 }
 
 /* Responsive Design */
