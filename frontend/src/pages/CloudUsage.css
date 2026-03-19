@@ -1,7 +1,7 @@
-.cloudusage-container {
-  padding: 40px 20px;
-  background: #F8FAFC;
+.cloud-usage {
+  background: #F1F5F9;
   min-height: 100vh;
+  padding: 20px;
 }
 
 .cloudusage-header {
