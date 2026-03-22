@@ -157,3 +157,25 @@
     font-size: 0.9rem;
   }
 }
+.alert-link {
+  position: relative;
+}
+
+.alert-link a {
+  position: relative;
+  display: inline-block;
+}
+
+.alert-badge {
+  position: absolute;
+  top: -6px;
+  right: -14px;
+  background: #EF4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 50%;
+  min-width: 18px;
+  text-align: center;
+}
