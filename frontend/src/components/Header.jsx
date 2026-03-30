@@ -1,25 +1,53 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/CloudOptix_logo.png';
 import './Header.css';
 
+const ALERTS_UPDATED_EVENT = 'cloud-alerts-updated';
+const ALERTS_UPDATED_STORAGE_KEY = 'cloud-alerts-last-updated';
+
 export default function Header({ onLogout }) {
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const location = useLocation();
+  const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
-    const updateAlerts = () => {
-      const alerts = JSON.parse(localStorage.getItem("alerts")) || [];
-      const unread = alerts.filter(a => a.status === "unread").length;
-      setUnreadCount(unread);
+    let mounted = true;
+
+    const loadAlerts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/alerts');
+        const data = await response.json();
+
+        if (mounted) {
+          setAlertCount(Array.isArray(data) ? data.length : 0);
+        }
+      } catch {
+        if (mounted) {
+          setAlertCount(0);
+        }
+      }
     };
 
-    updateAlerts();
+    const handleAlertsUpdated = () => {
+      loadAlerts();
+    };
 
-    // ✅ Listen for custom event
-    window.addEventListener("alertsUpdated", updateAlerts);
+    const handleStorage = (event) => {
+      if (event.key === ALERTS_UPDATED_STORAGE_KEY) {
+        loadAlerts();
+      }
+    };
 
-    return () => window.removeEventListener("alertsUpdated", updateAlerts);
+    loadAlerts();
+    window.addEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -32,51 +60,52 @@ export default function Header({ onLogout }) {
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Cloud Usage', path: '/cloud-usage' },
     { label: 'Cost Leaks', path: '/cost-leaks' },
-    { label: 'Reports', path: '/reports' }
+    { label: 'Reports', path: '/reports' },
   ];
 
   return (
     <header className="header">
       <div className="header-container">
-
         <div className="header-logo" onClick={() => navigate('/dashboard')}>
           <img src={logo} alt="CloudOptix Logo" className="logo-image" />
         </div>
 
         <nav className="header-nav">
           <ul className="nav-links">
-
-            {navLinks.map(link => (
+            {navLinks.map((link) => (
               <li key={link.path}>
-                <a href={link.path} onClick={(e) => {
-                  e.preventDefault();
-                  navigate(link.path);
-                }}>
+                <a
+                  href={link.path}
+                  className={location.pathname === link.path ? 'active-link' : ''}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigate(link.path);
+                  }}
+                >
                   {link.label}
                 </a>
               </li>
             ))}
 
-            {/* 🔔 Alerts */}
             <li className="alert-link">
-              <a href="/alerts" onClick={(e) => {
-                e.preventDefault();
-                navigate('/alerts');
-              }}>
-                🔔 Alerts
-                {unreadCount > 0 && (
-                  <span className="alert-badge">{unreadCount}</span>
-                )}
+              <a
+                href="/alerts"
+                className={location.pathname === '/alerts' ? 'active-link' : ''}
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigate('/alerts');
+                }}
+              >
+                Alerts
+                {alertCount > 0 && <span className="alert-badge">{alertCount}</span>}
               </a>
             </li>
-
           </ul>
         </nav>
 
         <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>
-
       </div>
     </header>
   );

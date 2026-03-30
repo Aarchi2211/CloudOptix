@@ -179,3 +179,28 @@
   min-width: 18px;
   text-align: center;
 }
+/* ✅ ACTIVE LINK STYLE */
+.active-link {
+  color: #2563EB !important;
+  font-weight: 600;
+}
+
+.active-link::after {
+  width: 100% !important;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #2563EB;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-links a:hover::after,
+.active-link::after {
+  width: 100%;
+}
