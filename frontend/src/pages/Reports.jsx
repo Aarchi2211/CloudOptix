@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useUsageRecords } from '../hooks/useUsageRecords';
 import './Reports.css';
+import html2pdf from 'html2pdf.js';
 import {
   Bar,
   BarChart,
@@ -289,7 +290,15 @@ export default function Reports() {
   );
 
   const handleDownloadPDF = () => {
-    alert('PDF export can be connected later. CSV export already downloads the analytics derived from your uploaded billing data.');
+    const element = document.querySelector('.reports-shell');
+    const options = {
+      margin: 0.5,
+      filename: `cloud-analytics-report-${new Date().toISOString().slice(0, 10)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+    };
+    html2pdf().set(options).from(element).save();
   };
 
   const handleDownloadCSV = () => {
@@ -372,7 +381,7 @@ export default function Reports() {
                 Download Analytics CSV
               </button>
               <button className="reports-btn secondary" type="button" onClick={handleDownloadPDF}>
-                PDF Export Placeholder
+                Export PDF
               </button>
             </div>
           </aside>

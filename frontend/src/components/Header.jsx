@@ -9,6 +9,7 @@ export default function Header({ onLogout, user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [alertCount, setAlertCount] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -57,8 +58,14 @@ export default function Header({ onLogout, user }) {
           <img src={logo} alt="CloudOptix Logo" className="logo-image" />
         </div>
 
+        <button className={`hamburger-btn ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
         <nav className="header-nav">
-          <ul className="nav-links">
+          <ul className={`nav-links ${isMenuOpen ? 'open' : ''}`}>
             {navLinks.map((link) => (
               <li key={link.path}>
                 <a
@@ -67,6 +74,7 @@ export default function Header({ onLogout, user }) {
                   onClick={(event) => {
                     event.preventDefault();
                     navigate(link.path);
+                    setIsMenuOpen(false); // Close menu on navigation
                   }}
                 >
                   {link.label}
@@ -81,6 +89,7 @@ export default function Header({ onLogout, user }) {
                 onClick={(event) => {
                   event.preventDefault();
                   navigate('/alerts');
+                  setIsMenuOpen(false); // Close menu on navigation
                 }}
               >
                 Alerts

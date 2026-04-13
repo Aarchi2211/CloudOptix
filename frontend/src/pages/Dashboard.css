@@ -12,7 +12,10 @@
 
 .dashboard-container {
   padding: 40px 20px;
-  background: #F8FAFC;
+  background: 
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.14), transparent 20%),
+    linear-gradient(180deg, #0f3b8f 0%, #1666c5 48%, #64bbff 100%);
   min-height: 100vh;
 }
 

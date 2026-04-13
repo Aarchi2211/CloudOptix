@@ -21,7 +21,10 @@ const CHART_AMBER = '#f59e0b';
 
 const pageStyles = `
 :root{--primary-blue:#2563eb;--primary-blue-deep:#1d4ed8;--accent-yellow:#f59e0b;--accent-yellow-soft:#fbbf24;--success-green:#16a34a;--danger-red:#dc2626;--text-strong:#0f172a;--text-muted:#64748b;--surface-card:rgba(255,255,255,.92)}
-.dashboard-container{min-height:100vh;padding:36px 20px 56px;background:radial-gradient(circle at top left,rgba(125,211,252,.2),transparent 24%),radial-gradient(circle at top right,rgba(245,158,11,.12),transparent 22%),linear-gradient(180deg,#f9fbff 0%,#f7faff 42%,#f3f6fb 100%)}
+.dashboard-container{min-height:100vh;padding:36px 20px 56px;background:background:
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.14), transparent 20%),
+    linear-gradient(180deg, #0f3b8f 0%, #1666c5 48%, #64bbff 100%);}
 .dashboard-shell{max-width:1280px;margin:0 auto}
 .dashboard-card,.dashboard-empty{background:var(--surface-card);border:1px solid rgba(148,163,184,.16);border-radius:16px;box-shadow:0 18px 40px rgba(15,23,42,.08)}
 .dashboard-header{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.9fr);gap:18px;margin-bottom:22px}
