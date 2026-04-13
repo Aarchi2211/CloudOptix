@@ -1,63 +1,60 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Login.css';
+import { loginUser } from '../utils/api';
+import { getHomeRoute, storeAuthData } from '../utils/auth';
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
-  const [emailOrUsername, setEmailOrUsername] = useState('');
+  const location = useLocation();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
 
-  try {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    try {
+      const data = await loginUser({ email, password });
 
-    const existingUser = users.find(
-      user =>
-        user.email === emailOrUsername &&
-        user.password === password
-    );
+      storeAuthData({
+        token: data.token,
+        user: data.user,
+      });
 
-    if (!existingUser) {
-      setError("Invalid email or password.");
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          token: data.token,
+          user: data.user,
+        });
+      }
+
+      const redirectTarget = location.state?.from?.pathname;
+      navigate(redirectTarget || getHomeRoute(data.user), { replace: true });
+    } catch (loginError) {
+      setError(loginError.message || 'Network error. Please try again.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Save login token
-    localStorage.setItem("currentUser", JSON.stringify(existingUser));
-
-    if (onLoginSuccess) {
-      onLoginSuccess();
-    }
-
-  } catch (err) {
-    setError("Login failed.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>Login</h2>
-        
+        <h2>Welcome Back</h2>
+
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label htmlFor="emailOrUsername">Email / Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="emailOrUsername"
-              type="text"
-              placeholder="Enter your email or username"
-              value={emailOrUsername}
-              onChange={(e) => setEmailOrUsername(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>
@@ -69,25 +66,25 @@ export default function Login({ onLoginSuccess }) {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               required
             />
           </div>
 
+          <div className="form-note">
+            Sign in to review cloud billing trends, investigate cost leakage, and manage alerts in one workspace.
+          </div>
+
           {error && <div className="error-message">{error}</div>}
 
-          <button 
-            type="submit" 
-            className="login-button"
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login'}
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Signing In...' : 'Login'}
           </button>
         </form>
 
         <p className="register-link">
-          Don't have an account? 
-        <Link to="/register"> Register here</Link>
+          Don&apos;t have an account?
+          <Link to="/register"> Register here</Link>
         </p>
       </div>
     </div>

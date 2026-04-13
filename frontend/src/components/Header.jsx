@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { fetchAlerts } from '../utils/api';
+import { ALERTS_UPDATED_EVENT } from '../utils/cloudEvents';
 import logo from '../assets/CloudOptix_logo.png';
 import './Header.css';
 
-const ALERTS_UPDATED_EVENT = 'cloud-alerts-updated';
-const ALERTS_UPDATED_STORAGE_KEY = 'cloud-alerts-last-updated';
-
-export default function Header({ onLogout }) {
+export default function Header({ onLogout, user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [alertCount, setAlertCount] = useState(0);
@@ -16,11 +15,9 @@ export default function Header({ onLogout }) {
 
     const loadAlerts = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/alerts');
-        const data = await response.json();
-
+        const data = await fetchAlerts();
         if (mounted) {
-          setAlertCount(Array.isArray(data) ? data.length : 0);
+          setAlertCount(Array.isArray(data) ? data.filter((alert) => alert.status === 'unread').length : 0);
         }
       } catch {
         if (mounted) {
@@ -33,28 +30,14 @@ export default function Header({ onLogout }) {
       loadAlerts();
     };
 
-    const handleStorage = (event) => {
-      if (event.key === ALERTS_UPDATED_STORAGE_KEY) {
-        loadAlerts();
-      }
-    };
-
     loadAlerts();
     window.addEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
-    window.addEventListener('storage', handleStorage);
 
     return () => {
       mounted = false;
       window.removeEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
-      window.removeEventListener('storage', handleStorage);
     };
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    onLogout && onLogout();
-    navigate('/login');
-  };
 
   const navLinks = [
     { label: 'Dashboard', path: '/dashboard' },
@@ -63,10 +46,14 @@ export default function Header({ onLogout }) {
     { label: 'Reports', path: '/reports' },
   ];
 
+  if (user?.role === 'Admin') {
+    navLinks.push({ label: 'Admin', path: '/admin' });
+  }
+
   return (
     <header className="header">
       <div className="header-container">
-        <div className="header-logo" onClick={() => navigate('/dashboard')}>
+        <div className="header-logo" onClick={() => navigate(user?.role === 'Admin' ? '/admin' : '/dashboard')}>
           <img src={logo} alt="CloudOptix Logo" className="logo-image" />
         </div>
 
@@ -103,7 +90,7 @@ export default function Header({ onLogout }) {
           </ul>
         </nav>
 
-        <button className="logout-btn" onClick={handleLogout}>
+        <button className="logout-btn" onClick={onLogout}>
           Logout
         </button>
       </div>

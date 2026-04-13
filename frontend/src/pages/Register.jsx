@@ -1,65 +1,51 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Register.css';
-import { useNavigate } from 'react-router-dom';
+import { registerUser } from '../utils/api';
+import { getHomeRoute, storeAuthData } from '../utils/auth';
 
-export default function Register() {
+export default function Register({ onLoginSuccess }) {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('User');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
-  const handleRegister = (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+  const handleRegister = async (event) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
 
-  try {
-    // Get existing users
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    try {
+      const data = await registerUser({ name, email, password, role });
 
-    // Check if email already exists
-    const userExists = users.find(user => user.email === email);
+      storeAuthData({
+        token: data.token,
+        user: data.user,
+      });
 
-    if (userExists) {
-      setError("User already registered with this email.");
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          token: data.token,
+          user: data.user,
+        });
+      }
+
+      navigate(getHomeRoute(data.user), { replace: true });
+    } catch (registerError) {
+      setError(registerError.message || 'Network error. Please try again.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Create new user object
-    const newUser = {
-      name,
-      email,
-      password,
-      role
-    };
-
-    // Add new user to users array
-    users.push(newUser);
-
-    // Save updated users list
-    localStorage.setItem("users", JSON.stringify(users));
-
-    alert("Registration Successful! Please Login.");
-
-    // Redirect to login page
-    navigate("/login", { replace: true });
-
-  } catch (err) {
-    setError("Registration failed. Try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="register-container">
       <div className="register-box">
-        <h2>Register</h2>
-        
+        <h2>Create Account</h2>
+
         <form onSubmit={handleRegister}>
           <div className="form-group">
             <label htmlFor="name">Name</label>
@@ -68,7 +54,7 @@ export default function Register() {
               type="text"
               placeholder="Enter your full name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(event) => setName(event.target.value)}
               required
             />
           </div>
@@ -80,7 +66,7 @@ export default function Register() {
               type="email"
               placeholder="Enter your email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>
@@ -92,37 +78,34 @@ export default function Register() {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               required
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="role">Role</label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
+            <select id="role" value={role} onChange={(event) => setRole(event.target.value)}>
               <option value="User">User</option>
               <option value="Admin">Admin</option>
             </select>
           </div>
 
+          <div className="role-hint">
+            User accounts can upload billing CSVs and manage insights. Admin accounts unlock platform-wide control and
+            user management.
+          </div>
+
           {error && <div className="error-message">{error}</div>}
 
-          <button 
-            type="submit" 
-            className="register-button"
-            disabled={loading}
-          >
-            {loading ? 'Registering...' : 'Register'}
+          <button type="submit" className="register-button" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Register'}
           </button>
         </form>
 
         <p className="login-link">
-          Already have an account? 
-          <a href="/"> Login here</a>
+          Already have an account?
+          <Link to="/login"> Login here</Link>
         </p>
       </div>
     </div>

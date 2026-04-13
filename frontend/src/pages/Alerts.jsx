@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { deleteAlertById, fetchAlerts, updateAlertStatus } from '../utils/api';
+import { ALERTS_UPDATED_EVENT, dispatchAlertsUpdated } from '../utils/cloudEvents';
 import './Alerts.css';
-
-const ALERTS_UPDATED_EVENT = 'cloud-alerts-updated';
-const ALERTS_UPDATED_STORAGE_KEY = 'cloud-alerts-last-updated';
 
 const formatCurrency = (value) => {
   if (value == null || Number.isNaN(Number(value))) {
@@ -34,6 +33,8 @@ export default function Alerts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeAlertId, setActiveAlertId] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -41,18 +42,19 @@ export default function Alerts() {
     const loadAlerts = async () => {
       if (mounted) {
         setLoading(true);
+        setError('');
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/alerts');
-        const data = await response.json();
+        const data = await fetchAlerts();
 
         if (mounted) {
           setAlerts(Array.isArray(data) ? data : []);
         }
-      } catch {
+      } catch (loadError) {
         if (mounted) {
           setAlerts([]);
+          setError(loadError.message || 'Failed to load alerts.');
         }
       } finally {
         if (mounted) {
@@ -65,22 +67,42 @@ export default function Alerts() {
       loadAlerts();
     };
 
-    const handleStorage = (event) => {
-      if (event.key === ALERTS_UPDATED_STORAGE_KEY) {
-        loadAlerts();
-      }
-    };
-
     loadAlerts();
     window.addEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
-    window.addEventListener('storage', handleStorage);
 
     return () => {
       mounted = false;
       window.removeEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
-      window.removeEventListener('storage', handleStorage);
     };
   }, []);
+
+  const handleStatusChange = async (alertId, status) => {
+    try {
+      setActiveAlertId(alertId);
+      const updatedAlert = await updateAlertStatus(alertId, status);
+      setAlerts((currentAlerts) =>
+        currentAlerts.map((alert) => (alert._id === alertId ? updatedAlert : alert)),
+      );
+      dispatchAlertsUpdated();
+    } catch (statusError) {
+      setError(statusError.message || 'Failed to update alert status.');
+    } finally {
+      setActiveAlertId('');
+    }
+  };
+
+  const handleDelete = async (alertId) => {
+    try {
+      setActiveAlertId(alertId);
+      await deleteAlertById(alertId);
+      setAlerts((currentAlerts) => currentAlerts.filter((alert) => alert._id !== alertId));
+      dispatchAlertsUpdated();
+    } catch (deleteError) {
+      setError(deleteError.message || 'Failed to delete alert.');
+    } finally {
+      setActiveAlertId('');
+    }
+  };
 
   const filteredAlerts = useMemo(() => {
     return alerts.filter((alert) => {
@@ -101,6 +123,7 @@ export default function Alerts() {
       total: alerts.length,
       high,
       medium,
+      unread: alerts.filter((alert) => alert.status === 'unread').length,
     };
   }, [alerts]);
 
@@ -124,6 +147,10 @@ export default function Alerts() {
           <span className="stat-label">Medium Severity</span>
           <span className="stat-value">{stats.medium}</span>
         </div>
+        <div className="stat-card">
+          <span className="stat-label">Unread Alerts</span>
+          <span className="stat-value">{stats.unread}</span>
+        </div>
       </div>
 
       <div className="alert-controls">
@@ -139,11 +166,20 @@ export default function Alerts() {
         <div className="filter-group">
           <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)}>
             <option value="all">All Severities</option>
+            <option value="critical">Critical</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
         </div>
       </div>
+
+      {error ? (
+        <div className="no-alerts">
+          <h2>Unable to load alerts</h2>
+          <p>{error}</p>
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="no-alerts">
@@ -159,7 +195,10 @@ export default function Alerts() {
       ) : (
         <div className="alerts-list">
           {filteredAlerts.map((alert, index) => (
-            <div key={alert._id || alert.alertKey || index} className={`alert-item ${alert.severity || 'medium'}`}>
+            <div
+              key={alert._id || index}
+              className={`alert-item ${alert.severity || 'medium'} ${alert.status || 'unread'}`}
+            >
               <div className="alert-indicator"></div>
 
               <div className="alert-main-content">
@@ -181,8 +220,38 @@ export default function Alerts() {
                     <strong>Previous Cost:</strong> {formatCurrency(alert.previousCost)}
                   </span>
                   <span className="meta-item time">
-                    <strong>Detected:</strong> {formatDate(alert.dateTime)}
+                    <strong>Detected:</strong> {formatDate(alert.createdAt)}
                   </span>
+                </div>
+
+                <div className="alert-expanded">
+                  <div className="action-section">
+                    <h4>Alert Status</h4>
+                    <p>Keep the alert list current by marking items as read or removing resolved items.</p>
+                  </div>
+
+                  <div className="alert-actions">
+                    <button
+                      type="button"
+                      className={`btn-action ${alert.status === 'read' ? 'mark-unread' : 'mark-read'}`}
+                      onClick={() => handleStatusChange(alert._id, alert.status === 'read' ? 'unread' : 'read')}
+                      disabled={activeAlertId === alert._id}
+                    >
+                      {activeAlertId === alert._id
+                        ? 'Updating...'
+                        : alert.status === 'read'
+                          ? 'Mark as Unread'
+                          : 'Mark as Read'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-action dismiss"
+                      onClick={() => handleDelete(alert._id)}
+                      disabled={activeAlertId === alert._id}
+                    >
+                      {activeAlertId === alert._id ? 'Working...' : 'Delete Alert'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

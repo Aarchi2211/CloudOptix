@@ -1,58 +1,145 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
+const User = require("./models/User");
+const { authenticate, authorizeRoles } = require("./middleware/auth");
+const { uploadUsage, getUsage } = require("./controllers/usageController");
+const { getAlerts, updateAlert, deleteAlert } = require("./controllers/alertController");
+
 const router = express.Router();
-const Usage = require("./models/Usage");
-const Alert = require("./models/Alert");
 
-const buildFallbackAlerts = (records) => {
-  const alerts = [];
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  records.forEach((item) => {
-    if (Number(item.cost) > 100) {
-      alerts.push({
-        title: "High Cost",
-        severity: "high",
-        resource: item.resource,
-        message: `${item.service || 'Service'} crossed the configured cost threshold.`,
-        dateTime: item.date || new Date().toISOString(),
-      });
+const createToken = (user) =>
+  jwt.sign(
+    {
+      sub: user._id.toString(),
+      role: user.role,
+      email: user.email,
+    },
+    process.env.JWT_SECRET || "dev-jwt-secret",
+    { expiresIn: "7d" },
+  );
+
+const buildAuthPayload = (user) => ({
+  token: createToken(user),
+  user: user.toSafeObject(),
+});
+
+router.post("/register", async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Name, email, and password are required." });
     }
-  });
 
-  return alerts;
-};
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Please enter a valid email address." });
+    }
 
-router.post("/upload", async (req, res) => {
-  const payload = req.body;
-  const records = Array.isArray(payload) ? payload : Array.isArray(payload.records) ? payload.records : [];
-  const uploadedAlerts = Array.isArray(payload?.alerts) ? payload.alerts : [];
+    if (String(password).length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters long." });
+    }
 
-  if (records.length > 0) {
-    await Usage.insertMany(records);
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+
+    if (existingUser) {
+      return res.status(409).json({ error: "An account with this email already exists." });
+    }
+
+    const user = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password,
+      role: role === "Admin" ? "Admin" : "User",
+    });
+
+    return res.status(201).json({
+      message: "Registration successful.",
+      ...buildAuthPayload(user),
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    return res.status(500).json({ error: "Registration failed. Please try again." });
   }
+});
 
-  const alertsToStore = uploadedAlerts.length > 0 ? uploadedAlerts : buildFallbackAlerts(records);
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  await Alert.deleteMany({});
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required." });
+    }
 
-  if (alertsToStore.length > 0) {
-    await Alert.insertMany(alertsToStore);
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select("+password");
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    return res.json({
+      message: "Login successful.",
+      ...buildAuthPayload(user),
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({ error: "Login failed. Please try again." });
   }
-
-  res.json({
-    message: "Data stored successfully",
-    storedRecords: records.length,
-    storedAlerts: alertsToStore.length,
-  });
 });
 
-router.get("/alerts", async (req, res) => {
-  const alerts = await Alert.find().sort({ dateTime: -1, _id: -1 });
-  res.json(alerts);
+router.get("/users", authenticate, authorizeRoles("Admin"), async (_req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 }).lean();
+
+    return res.json(
+      users.map((user) => ({
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      })),
+    );
+  } catch (error) {
+    console.error("Fetch users error:", error);
+    return res.status(500).json({ error: "Failed to fetch users." });
+  }
 });
 
-router.get("/usage", async (req, res) => {
-  const usage = await Usage.find();
-  res.json(usage);
+router.delete("/users/:id", authenticate, authorizeRoles("Admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (req.user.id === id) {
+      return res.status(400).json({ error: "Admin accounts cannot delete themselves." });
+    }
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.json({ message: "User deleted successfully." });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({ error: "Failed to delete user." });
+  }
 });
+
+router.post("/upload", authenticate, uploadUsage);
+router.get("/usage", authenticate, getUsage);
+router.get("/alerts", authenticate, getAlerts);
+router.patch("/alerts/:id", authenticate, updateAlert);
+router.delete("/alerts/:id", authenticate, deleteAlert);
 
 module.exports = router;

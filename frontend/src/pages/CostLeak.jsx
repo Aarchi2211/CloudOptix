@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { detectCostLeaks } from '../utils/costLeakDetector';
+import { useUsageRecords } from '../hooks/useUsageRecords';
 import './CostLeak.css';
-
-const USAGE_DATA_UPDATED_EVENT = 'cloud-usage-data-updated';
-const USAGE_DATA_STORAGE_KEY = 'cloud-usage-records';
 
 const formatCurrency = (value = 0) =>
   new Intl.NumberFormat('en-US', {
@@ -21,49 +19,10 @@ const formatDate = (value) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
 
-const loadStoredRecords = () => {
-  try {
-    const raw = localStorage.getItem(USAGE_DATA_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.records) ? parsed.records : [];
-  } catch {
-    return [];
-  }
-};
-
 export default function CostLeak() {
-  const [records, setRecords] = useState([]);
+  const { records, loading, error } = useUsageRecords();
   const [severityFilter, setSeverityFilter] = useState('all');
   const [selectedLeakId, setSelectedLeakId] = useState(null);
-
-  useEffect(() => {
-    const syncRecords = (nextRecords) => {
-      setRecords(Array.isArray(nextRecords) ? nextRecords : loadStoredRecords());
-    };
-
-    const handleUsageUpdated = (event) => {
-      syncRecords(event.detail?.records);
-    };
-
-    const handleStorage = (event) => {
-      if (event.key === USAGE_DATA_STORAGE_KEY) {
-        syncRecords();
-      }
-    };
-
-    syncRecords(loadStoredRecords());
-    window.addEventListener(USAGE_DATA_UPDATED_EVENT, handleUsageUpdated);
-    window.addEventListener('storage', handleStorage);
-
-    return () => {
-      window.removeEventListener(USAGE_DATA_UPDATED_EVENT, handleUsageUpdated);
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, []);
 
   const leaks = useMemo(() => detectCostLeaks(records), [records]);
 
@@ -95,7 +54,19 @@ export default function CostLeak() {
         <p>Analyze uploaded AWS, Azure, and GCP billing records to uncover idle resources, over-provisioned services, and wasteful long-running spend.</p>
       </header>
 
-      {records.length === 0 ? (
+      {loading ? (
+        <section className="no-leaks empty-shell">
+          <div className="no-leaks-icon">...</div>
+          <h2>Loading Billing Data</h2>
+          <p>Cost leak detection is fetching usage records from the backend.</p>
+        </section>
+      ) : error ? (
+        <section className="no-leaks empty-shell">
+          <div className="no-leaks-icon">!</div>
+          <h2>Usage data could not be loaded</h2>
+          <p>{error}</p>
+        </section>
+      ) : records.length === 0 ? (
         <section className="no-leaks empty-shell">
           <div className="no-leaks-icon">Upload</div>
           <h2>No Billing Data Available Yet</h2>

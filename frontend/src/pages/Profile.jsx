@@ -1,40 +1,49 @@
 import { useState } from 'react';
-import './Profile.css';
 import { useNavigate } from 'react-router-dom';
+import './Profile.css';
+import { clearAuthData, getAuthUser } from '../utils/auth';
 
 export default function Profile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('details');
-  const [userDetails, setUserDetails] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    role: 'Admin',
-    company: 'Tech Solutions Inc.',
-    joinDate: '2023-06-15',
-    accountStatus: 'Active'
+
+  const [userDetails, setUserDetails] = useState(() => {
+    const user = getAuthUser();
+
+    if (user) {
+      return {
+        name: user.name || 'User',
+        email: user.email || '',
+        role: user.role || 'User',
+        id: user.id || '',
+      };
+    }
+
+    return {
+      name: 'User',
+      email: '',
+      role: 'User',
+      id: '',
+    };
   });
 
   const [editMode, setEditMode] = useState(false);
   const [editDetails, setEditDetails] = useState(userDetails);
-
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
-
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
-    confirm: false
+    confirm: false,
   });
 
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
     setEditDetails({ ...editDetails, [name]: value });
   };
 
@@ -44,56 +53,54 @@ export default function Profile() {
     alert('Profile details updated successfully!');
   };
 
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
+  const handlePasswordChange = (event) => {
+    const { name, value } = event.target;
     setPasswordForm({ ...passwordForm, [name]: value });
     setPasswordError('');
     setPasswordSuccess('');
   };
 
-  const handleChangePassword = (e) => {
-    e.preventDefault();
+  const handleChangePassword = (event) => {
+    event.preventDefault();
     setPasswordError('');
     setPasswordSuccess('');
 
-    // Validation
     if (!passwordForm.currentPassword) {
       setPasswordError('Current password is required');
       return;
     }
+
     if (!passwordForm.newPassword) {
       setPasswordError('New password is required');
       return;
     }
+
     if (passwordForm.newPassword.length < 8) {
       setPasswordError('Password must be at least 8 characters long');
       return;
     }
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setPasswordError('New passwords do not match');
       return;
     }
+
     if (passwordForm.currentPassword === passwordForm.newPassword) {
       setPasswordError('New password must be different from current password');
       return;
     }
 
-    // Success
     setPasswordSuccess('Password changed successfully!');
     setPasswordForm({
       currentPassword: '',
       newPassword: '',
-      confirmPassword: ''
+      confirmPassword: '',
     });
   };
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      // Clear any stored authentication data
-      localStorage.removeItem('authToken');
-      sessionStorage.removeItem('authToken');
-      
-      // Redirect to login
+      clearAuthData();
       navigate('/');
     }
   };
@@ -106,41 +113,27 @@ export default function Profile() {
       </header>
 
       <div className="profile-content">
-        {/* Sidebar */}
         <aside className="profile-sidebar">
           <div className="profile-avatar">
-            <div className="avatar-placeholder">
-              {userDetails.firstName.charAt(0)}{userDetails.lastName.charAt(0)}
-            </div>
-            <h3>{userDetails.firstName} {userDetails.lastName}</h3>
+            <div className="avatar-placeholder">{userDetails.name.charAt(0).toUpperCase()}</div>
+            <h3>{userDetails.name}</h3>
             <p className="role-badge">{userDetails.role}</p>
           </div>
 
           <nav className="profile-nav">
-            <button
-              className={`nav-item ${activeTab === 'details' ? 'active' : ''}`}
-              onClick={() => setActiveTab('details')}
-            >
-              👤 Profile Details
+            <button className={`nav-item ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>
+              Profile Details
             </button>
-            <button
-              className={`nav-item ${activeTab === 'password' ? 'active' : ''}`}
-              onClick={() => setActiveTab('password')}
-            >
-              🔐 Change Password
+            <button className={`nav-item ${activeTab === 'password' ? 'active' : ''}`} onClick={() => setActiveTab('password')}>
+              Change Password
             </button>
-            <button
-              className={`nav-item logout`}
-              onClick={handleLogout}
-            >
-              🚪 Logout
+            <button className="nav-item logout" onClick={handleLogout}>
+              Logout
             </button>
           </nav>
         </aside>
 
-        {/* Main Content */}
         <main className="profile-main">
-          {/* Profile Details Tab */}
           {activeTab === 'details' && (
             <div className="tab-content">
               <div className="tab-header">
@@ -153,91 +146,42 @@ export default function Profile() {
                       setEditDetails(userDetails);
                     }}
                   >
-                    ✎ Edit Profile
+                    Edit Profile
                   </button>
                 )}
               </div>
 
               {editMode ? (
                 <form className="profile-form">
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>First Name</label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={editDetails.firstName}
-                        onChange={handleEditChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Last Name</label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={editDetails.lastName}
-                        onChange={handleEditChange}
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" value={editDetails.name} onChange={handleEditChange} />
                   </div>
 
                   <div className="form-group">
                     <label>Email Address</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={editDetails.email}
-                      onChange={handleEditChange}
-                    />
+                    <input type="email" name="email" value={editDetails.email} disabled />
                   </div>
 
                   <div className="form-group">
-                    <label>Phone Number</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={editDetails.phone}
-                      onChange={handleEditChange}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Company</label>
-                    <input
-                      type="text"
-                      name="company"
-                      value={editDetails.company}
-                      onChange={handleEditChange}
-                    />
+                    <label>Role</label>
+                    <input type="text" name="role" value={editDetails.role} disabled />
                   </div>
 
                   <div className="form-actions">
-                    <button
-                      type="button"
-                      className="btn-save"
-                      onClick={handleSaveDetails}
-                    >
-                      ✓ Save Changes
+                    <button type="button" className="btn-save" onClick={handleSaveDetails}>
+                      Save Changes
                     </button>
-                    <button
-                      type="button"
-                      className="btn-cancel"
-                      onClick={() => setEditMode(false)}
-                    >
-                      ✕ Cancel
+                    <button type="button" className="btn-cancel" onClick={() => setEditMode(false)}>
+                      Cancel
                     </button>
                   </div>
                 </form>
               ) : (
                 <div className="details-display">
                   <div className="detail-item">
-                    <span className="detail-label">First Name</span>
-                    <span className="detail-value">{userDetails.firstName}</span>
-                  </div>
-
-                  <div className="detail-item">
-                    <span className="detail-label">Last Name</span>
-                    <span className="detail-value">{userDetails.lastName}</span>
+                    <span className="detail-label">Full Name</span>
+                    <span className="detail-value">{userDetails.name}</span>
                   </div>
 
                   <div className="detail-item">
@@ -246,35 +190,14 @@ export default function Profile() {
                   </div>
 
                   <div className="detail-item">
-                    <span className="detail-label">Phone Number</span>
-                    <span className="detail-value">{userDetails.phone}</span>
-                  </div>
-
-                  <div className="detail-item">
-                    <span className="detail-label">Company</span>
-                    <span className="detail-value">{userDetails.company}</span>
-                  </div>
-
-                  <div className="detail-item">
                     <span className="detail-label">Role</span>
                     <span className="detail-value">{userDetails.role}</span>
-                  </div>
-
-                  <div className="detail-item">
-                    <span className="detail-label">Account Status</span>
-                    <span className="detail-value status-active">{userDetails.accountStatus}</span>
-                  </div>
-
-                  <div className="detail-item">
-                    <span className="detail-label">Member Since</span>
-                    <span className="detail-value">{new Date(userDetails.joinDate).toLocaleDateString()}</span>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Change Password Tab */}
           {activeTab === 'password' && (
             <div className="tab-content">
               <div className="tab-header">
@@ -297,7 +220,7 @@ export default function Profile() {
                       className="btn-toggle-password"
                       onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
                     >
-                      {showPassword.current ? '👁️' : '👁️‍🗨️'}
+                      {showPassword.current ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </div>
@@ -317,7 +240,7 @@ export default function Profile() {
                       className="btn-toggle-password"
                       onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
                     >
-                      {showPassword.new ? '👁️' : '👁️‍🗨️'}
+                      {showPassword.new ? 'Hide' : 'Show'}
                     </button>
                   </div>
                   <small className="password-hint">Minimum 8 characters required</small>
@@ -338,22 +261,13 @@ export default function Profile() {
                       className="btn-toggle-password"
                       onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
                     >
-                      {showPassword.confirm ? '👁️' : '👁️‍🗨️'}
+                      {showPassword.confirm ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </div>
 
-                {passwordError && (
-                  <div className="alert alert-error">
-                    <span>⚠️</span> {passwordError}
-                  </div>
-                )}
-
-                {passwordSuccess && (
-                  <div className="alert alert-success">
-                    <span>✓</span> {passwordSuccess}
-                  </div>
-                )}
+                {passwordError && <div className="alert alert-error">{passwordError}</div>}
+                {passwordSuccess && <div className="alert alert-success">{passwordSuccess}</div>}
 
                 <button type="submit" className="btn-change-password">
                   Update Password

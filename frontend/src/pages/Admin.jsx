@@ -1,455 +1,319 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import './Admin.css';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { deleteUserById, fetchAlerts, fetchAllUsers, fetchUsageRecords } from '../utils/api';
+import { getAuthUser } from '../utils/auth';
+
+const formatCurrency = (value = 0) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(Number(value) || 0);
+
+const formatDate = (value) => {
+  if (!value) {
+    return 'Unknown';
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+};
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('users');
+  const currentUser = getAuthUser();
+  const [users, setUsers] = useState([]);
+  const [usageRecords, setUsageRecords] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [deletingUserId, setDeletingUserId] = useState('');
 
-  // Users Management
-  const [users, setUsers] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active', joinDate: '2023-06-15', lastLogin: '2024-01-22' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Active', joinDate: '2023-08-20', lastLogin: '2024-01-21' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', role: 'User', status: 'Active', joinDate: '2023-09-10', lastLogin: '2024-01-20' },
-    { id: 4, name: 'Sarah Williams', email: 'sarah@example.com', role: 'User', status: 'Inactive', joinDate: '2023-07-05', lastLogin: '2024-01-15' },
-    { id: 5, name: 'David Brown', email: 'david@example.com', role: 'User', status: 'Active', joinDate: '2023-10-12', lastLogin: '2024-01-22' },
-  ]);
+  useEffect(() => {
+    let mounted = true;
 
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'User' });
+    const loadAdminData = async () => {
+      if (mounted) {
+        setLoading(true);
+        setError('');
+      }
 
-  // Cost Thresholds
-  const [thresholds, setThresholds] = useState({
-    dailyLimit: 500,
-    monthlyLimit: 15000,
-    warningPercentage: 80,
-    alertEmail: true,
-    alertSlack: false,
-  });
+      try {
+        const [usersResponse, usageResponse, alertsResponse] = await Promise.all([
+          fetchAllUsers(),
+          fetchUsageRecords(),
+          fetchAlerts(),
+        ]);
 
-  const [editThreshold, setEditThreshold] = useState(false);
-  const [tempThresholds, setTempThresholds] = useState(thresholds);
+        if (!mounted) {
+          return;
+        }
 
-  // System Reports Data
-  const systemReportData = [
-    { month: 'January', totalCost: 12450, activeUsers: 45, resources: 156 },
-    { month: 'December', totalCost: 11200, activeUsers: 42, resources: 142 },
-    { month: 'November', totalCost: 10850, activeUsers: 40, resources: 138 },
-    { month: 'October', totalCost: 11500, activeUsers: 43, resources: 150 },
-    { month: 'September', totalCost: 10200, activeUsers: 38, resources: 130 },
-    { month: 'August', totalCost: 9800, activeUsers: 35, resources: 125 },
-  ];
+        setUsers(Array.isArray(usersResponse) ? usersResponse : []);
+        setUsageRecords(Array.isArray(usageResponse) ? usageResponse : []);
+        setAlerts(Array.isArray(alertsResponse) ? alertsResponse : []);
+      } catch (loadError) {
+        if (mounted) {
+          setError(loadError.message || 'Failed to load admin data.');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const costDistribution = [
-    { name: 'Compute', value: 6200 },
-    { name: 'Storage', value: 3850 },
-    { name: 'Network', value: 2400 },
-  ];
+    loadAdminData();
 
-  const COLORS = ['#667eea', '#764ba2', '#f39c12'];
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-  // Handlers
-  const handleAddUser = () => {
-    if (!newUser.name || !newUser.email) {
-      alert('Please fill in all fields');
+  const handleDeleteUser = async (userId) => {
+    setActionError('');
+
+    if (!window.confirm('Delete this user account permanently?')) {
       return;
     }
-    setUsers([...users, { ...newUser, id: users.length + 1, status: 'Active', joinDate: new Date().toISOString().split('T')[0], lastLogin: new Date().toISOString().split('T')[0] }]);
-    setNewUser({ name: '', email: '', role: 'User' });
-    setShowAddUser(false);
-    alert('User added successfully!');
-  };
 
-  const handleDeleteUser = (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(user => user.id !== id));
-      alert('User deleted successfully!');
+    try {
+      setDeletingUserId(userId);
+      await deleteUserById(userId);
+      setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+    } catch (deleteError) {
+      setActionError(deleteError.message || 'Failed to delete the selected user.');
+    } finally {
+      setDeletingUserId('');
     }
   };
 
-  const handleToggleUserStatus = (id) => {
-    setUsers(users.map(user =>
-      user.id === id ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' } : user
-    ));
-  };
+  const summaryCards = useMemo(() => {
+    const totalCost = usageRecords.reduce((sum, record) => sum + (Number(record.cost) || 0), 0);
+    const adminCount = users.filter((user) => user.role === 'Admin').length;
+    const unreadAlerts = alerts.filter((alert) => alert.status === 'unread').length;
 
-  const handleSaveThresholds = () => {
-    setThresholds(tempThresholds);
-    setEditThreshold(false);
-    alert('Thresholds updated successfully!');
-  };
+    return [
+      { label: 'Platform Users', value: users.length, accent: 'blue' },
+      { label: 'Admin Accounts', value: adminCount, accent: 'yellow' },
+      { label: 'Uploaded Records', value: usageRecords.length, accent: 'sky' },
+      { label: 'Unread Alerts', value: unreadAlerts, accent: 'warning' },
+      { label: 'System-Wide Cost', value: formatCurrency(totalCost), accent: 'dark' },
+    ];
+  }, [alerts, usageRecords, users]);
 
-  const handleThresholdChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setTempThresholds({
-      ...tempThresholds,
-      [name]: type === 'checkbox' ? checked : parseFloat(value)
+  const roleBreakdown = useMemo(
+    () => [
+      { name: 'Users', value: users.filter((user) => user.role === 'User').length },
+      { name: 'Admins', value: users.filter((user) => user.role === 'Admin').length },
+    ],
+    [users],
+  );
+
+  const serviceSpend = useMemo(() => {
+    const serviceMap = new Map();
+
+    usageRecords.forEach((record) => {
+      const service = record.serviceName || record.service || 'Unknown';
+      serviceMap.set(service, (serviceMap.get(service) || 0) + (Number(record.cost) || 0));
     });
-  };
 
-  const activeUserCount = users.filter(u => u.status === 'Active').length;
-  const inactiveUserCount = users.filter(u => u.status === 'Inactive').length;
-  const adminCount = users.filter(u => u.role === 'Admin').length;
+    return Array.from(serviceMap.entries())
+      .map(([service, cost]) => ({ service, cost: Number(cost.toFixed(2)) }))
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, 6);
+  }, [usageRecords]);
+
+  const latestUploads = useMemo(
+    () =>
+      usageRecords
+        .slice()
+        .sort((a, b) => new Date(b.date || b.usageStartTime || 0) - new Date(a.date || a.usageStartTime || 0))
+        .slice(0, 6),
+    [usageRecords],
+  );
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <section className="admin-shell admin-empty-state">
+          <span className="eyebrow">Admin Control Center</span>
+          <h1>Loading platform data</h1>
+          <p>We&apos;re collecting users, billing records, and alerts from MongoDB so the admin console can render.</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-page">
+        <section className="admin-shell admin-empty-state">
+          <span className="eyebrow">Admin Control Center</span>
+          <h1>Admin dashboard unavailable</h1>
+          <p>{error}</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
-    <div className="admin-container">
-      <header className="admin-header">
-        <h1>Admin Dashboard</h1>
-        <p>Manage users, set cost thresholds, and view system-wide reports</p>
-      </header>
-
-      {/* Navigation */}
-      <nav className="admin-nav">
-        <button
-          className={`nav-btn ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          👥 Manage Users
-        </button>
-        <button
-          className={`nav-btn ${activeTab === 'thresholds' ? 'active' : ''}`}
-          onClick={() => setActiveTab('thresholds')}
-        >
-          ⚙️ Cost Thresholds
-        </button>
-        <button
-          className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`}
-          onClick={() => setActiveTab('reports')}
-        >
-          📊 System Reports
-        </button>
-      </nav>
-
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <section className="admin-section">
-          <div className="section-header">
-            <h2>Manage Users</h2>
-            <button className="btn-primary" onClick={() => setShowAddUser(!showAddUser)}>
-              + Add New User
-            </button>
+    <div className="admin-page">
+      <div className="admin-shell">
+        <section className="admin-hero">
+          <div className="hero-copy">
+            <span className="eyebrow">Admin Control Center</span>
+            <h1>Manage users, monitor billing activity, and keep the platform healthy.</h1>
+            <p>
+              Signed in as <strong>{currentUser?.name || 'Admin'}</strong>. This panel gives administrators a system-wide
+              view of users, uploaded usage records, cost concentration, and alert activity.
+            </p>
           </div>
 
-          {/* User Stats */}
-          <div className="stats-grid">
-            <div className="stat-card">
-              <span className="stat-label">Total Users</span>
-              <span className="stat-value">{users.length}</span>
-            </div>
-            <div className="stat-card active">
-              <span className="stat-label">Active Users</span>
-              <span className="stat-value">{activeUserCount}</span>
-            </div>
-            <div className="stat-card inactive">
-              <span className="stat-label">Inactive Users</span>
-              <span className="stat-value">{inactiveUserCount}</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Administrators</span>
-              <span className="stat-value">{adminCount}</span>
-            </div>
+          <div className="hero-side-card">
+            <span>System posture</span>
+            <strong>{alerts.filter((alert) => ['high', 'critical'].includes(alert.severity)).length} high-priority alerts</strong>
+            <p>Track anomalies quickly and keep the cloud cost leakage workflow visible from one place.</p>
           </div>
+        </section>
 
-          {/* Add User Form */}
-          {showAddUser && (
-            <div className="add-user-form">
-              <h3>Add New User</h3>
-              <div className="form-group">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  placeholder="Enter user's full name"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="Enter user's email"
-                />
-              </div>
-              <div className="form-group">
-                <label>Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                >
-                  <option value="User">User</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-              <div className="form-actions">
-                <button className="btn-save" onClick={handleAddUser}>
-                  Add User
-                </button>
-                <button className="btn-cancel" onClick={() => setShowAddUser(false)}>
-                  Cancel
-                </button>
+        <section className="admin-summary-grid">
+          {summaryCards.map((card) => (
+            <article key={card.label} className={`summary-tile ${card.accent}`}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+            </article>
+          ))}
+        </section>
+
+        {actionError && <div className="admin-inline-error">{actionError}</div>}
+
+        <section className="admin-content-grid">
+          <article className="admin-card users-card">
+            <div className="section-heading">
+              <div>
+                <span>User Management</span>
+                <h2>All registered accounts</h2>
               </div>
             </div>
-          )}
 
-          {/* Users Table */}
-          <div className="table-wrapper">
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Join Date</th>
-                  <th>Last Login</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => (
-                  <tr key={user.id} className={`status-${user.status.toLowerCase()}`}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`role-badge ${user.role.toLowerCase()}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${user.status.toLowerCase()}`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td>{user.joinDate}</td>
-                    <td>{user.lastLogin}</td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn-toggle"
-                        onClick={() => handleToggleUserStatus(user.id)}
-                        title={user.status === 'Active' ? 'Deactivate' : 'Activate'}
-                      >
-                        {user.status === 'Active' ? '⊙' : '○'}
-                      </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDeleteUser(user.id)}
-                        title="Delete user"
-                      >
-                        ✕
-                      </button>
-                    </td>
+            <div className="table-wrapper">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Created</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.name}</td>
+                      <td>{user.email}</td>
+                      <td>
+                        <span className={`role-pill ${user.role.toLowerCase()}`}>{user.role}</span>
+                      </td>
+                      <td>{formatDate(user.createdAt)}</td>
+                      <td>
+                        <button
+                          className="danger-button"
+                          disabled={deletingUserId === user.id || currentUser?.id === user.id}
+                          onClick={() => handleDeleteUser(user.id)}
+                        >
+                          {currentUser?.id === user.id ? 'Current Admin' : deletingUserId === user.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
 
-      {/* Thresholds Tab */}
-      {activeTab === 'thresholds' && (
-        <section className="admin-section">
-          <div className="section-header">
-            <h2>Cost Thresholds & Alerts</h2>
-            {!editThreshold && (
-              <button className="btn-primary" onClick={() => setEditThreshold(true)}>
-                ✎ Edit Thresholds
-              </button>
-            )}
-          </div>
-
-          {editThreshold ? (
-            <div className="threshold-form">
-              <div className="form-group">
-                <label>Daily Cost Limit ($)</label>
-                <input
-                  type="number"
-                  name="dailyLimit"
-                  value={tempThresholds.dailyLimit}
-                  onChange={handleThresholdChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Monthly Cost Limit ($)</label>
-                <input
-                  type="number"
-                  name="monthlyLimit"
-                  value={tempThresholds.monthlyLimit}
-                  onChange={handleThresholdChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Warning Alert Percentage (%)</label>
-                <input
-                  type="number"
-                  name="warningPercentage"
-                  min="0"
-                  max="100"
-                  value={tempThresholds.warningPercentage}
-                  onChange={handleThresholdChange}
-                />
-                <small>Alert users when they reach this percentage of their limit</small>
-              </div>
-
-              <div className="form-group checkbox">
-                <label>
-                  <input
-                    type="checkbox"
-                    name="alertEmail"
-                    checked={tempThresholds.alertEmail}
-                    onChange={handleThresholdChange}
-                  />
-                  <span>Send Email Alerts</span>
-                </label>
-              </div>
-
-              <div className="form-group checkbox">
-                <label>
-                  <input
-                    type="checkbox"
-                    name="alertSlack"
-                    checked={tempThresholds.alertSlack}
-                    onChange={handleThresholdChange}
-                  />
-                  <span>Send Slack Alerts</span>
-                </label>
-              </div>
-
-              <div className="form-actions">
-                <button className="btn-save" onClick={handleSaveThresholds}>
-                  Save Thresholds
-                </button>
-                <button className="btn-cancel" onClick={() => {
-                  setEditThreshold(false);
-                  setTempThresholds(thresholds);
-                }}>
-                  Cancel
-                </button>
+          <article className="admin-card">
+            <div className="section-heading">
+              <div>
+                <span>Role Distribution</span>
+                <h2>Admin vs user access</h2>
               </div>
             </div>
-          ) : (
-            <div className="threshold-display">
-              <div className="threshold-item">
-                <span className="label">Daily Cost Limit</span>
-                <span className="value">${thresholds.dailyLimit}</span>
-              </div>
-              <div className="threshold-item">
-                <span className="label">Monthly Cost Limit</span>
-                <span className="value">${thresholds.monthlyLimit}</span>
-              </div>
-              <div className="threshold-item">
-                <span className="label">Warning Alert at</span>
-                <span className="value">{thresholds.warningPercentage}%</span>
-              </div>
-              <div className="threshold-item">
-                <span className="label">Email Alerts</span>
-                <span className="value">{thresholds.alertEmail ? '✓ Enabled' : '✗ Disabled'}</span>
-              </div>
-              <div className="threshold-item">
-                <span className="label">Slack Alerts</span>
-                <span className="value">{thresholds.alertSlack ? '✓ Enabled' : '✗ Disabled'}</span>
-              </div>
-            </div>
-          )}
-        </section>
-      )}
 
-      {/* Reports Tab */}
-      {activeTab === 'reports' && (
-        <section className="admin-section">
-          <h2>System-Wide Reports</h2>
-
-          {/* Reports Charts */}
-          <div className="reports-grid">
-            <div className="report-card">
-              <h3>Monthly Cost Trend</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={systemReportData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => `$${value}`} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="totalCost"
-                    stroke="#667eea"
-                    strokeWidth={2}
-                    dot={{ fill: '#667eea', r: 5 }}
-                    name="Total Cost"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="report-card">
-              <h3>Active Users & Resources</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={systemReportData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="activeUsers" fill="#667eea" name="Active Users" />
-                  <Bar dataKey="resources" fill="#764ba2" name="Resources" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="report-card">
-              <h3>Cost Distribution</h3>
-              <ResponsiveContainer width="100%" height={300}>
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie
-                    data={costDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    label={({ name, value }) => `${name}: $${value}`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {costDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                  <Pie data={roleBreakdown} dataKey="value" cx="50%" cy="50%" innerRadius={72} outerRadius={102}>
+                    <Cell fill="#0ea5e9" />
+                    <Cell fill="#f59e0b" />
                   </Pie>
-                  <Tooltip formatter={(value) => `$${value}`} />
+                  <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </div>
 
-          {/* Summary Report */}
-          <div className="report-summary">
-            <h3>System Summary</h3>
-            <div className="summary-grid">
-              <div className="summary-item">
-                <span className="summary-label">Current Monthly Cost</span>
-                <span className="summary-value">${systemReportData[0].totalCost}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Total Active Users</span>
-                <span className="summary-value">{activeUserCount}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Total Resources</span>
-                <span className="summary-value">{systemReportData[0].resources}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Month-over-Month Change</span>
-                <span className="summary-value positive">
-                  +{((systemReportData[0].totalCost - systemReportData[1].totalCost) / systemReportData[1].totalCost * 100).toFixed(1)}%
-                </span>
+            <div className="legend-row">
+              {roleBreakdown.map((item) => (
+                <div className="legend-item" key={item.name}>
+                  <span className={`legend-dot ${item.name === 'Admins' ? 'yellow' : 'blue'}`}></span>
+                  {item.name}: {item.value}
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="admin-card">
+            <div className="section-heading">
+              <div>
+                <span>System-Wide Data</span>
+                <h2>Top services by spend</h2>
               </div>
             </div>
-          </div>
+
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={serviceSpend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                  <XAxis dataKey="service" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Bar dataKey="cost" fill="#0ea5e9" radius={[10, 10, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </article>
+
+          <article className="admin-card">
+            <div className="section-heading">
+              <div>
+                <span>Recent Uploads</span>
+                <h2>Latest platform billing rows</h2>
+              </div>
+            </div>
+
+            <div className="record-list">
+              {latestUploads.length === 0 ? (
+                <p className="muted-copy">No billing data uploaded yet.</p>
+              ) : (
+                latestUploads.map((record, index) => (
+                  <div className="record-item" key={`${record._id || record.resource || 'record'}-${index}`}>
+                    <div>
+                      <strong>{record.resource || 'Unknown resource'}</strong>
+                      <p>{record.service || record.serviceName || 'Unknown service'}</p>
+                    </div>
+                    <div className="record-metrics">
+                      <span>{formatCurrency(record.cost)}</span>
+                      <small>{formatDate(record.date || record.usageStartTime)}</small>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </article>
         </section>
-      )}
+      </div>
     </div>
   );
 }

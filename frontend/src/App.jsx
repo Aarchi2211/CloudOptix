@@ -1,7 +1,10 @@
-import { useState } from 'react'
-import './App.css'
+import { useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import './App.css';
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -11,72 +14,49 @@ import Reports from "./pages/Reports";
 import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { clearAuthData, getHomeRoute, getStoredAuth } from './utils/auth';
 
 function App() {
+  const [authState, setAuthState] = useState(() => getStoredAuth());
+  const isLoggedIn = Boolean(authState.token);
+  const currentUser = authState.user;
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const handleLoginSuccess = () => {
-    localStorage.setItem("token", "dummyToken");
-    setIsLoggedIn(true);
+  const handleLoginSuccess = (nextAuthState) => {
+    setAuthState(nextAuthState);
   };
 
   const handleLogout = () => {
-  // Remove token
-  localStorage.removeItem("token");
-
-  // Clear any other stored data 
-  localStorage.removeItem("user");
-  localStorage.removeItem("cloudData");
-  localStorage.removeItem("alerts");
-  localStorage.removeItem("reports");
-
-  // Update state
-  setIsLoggedIn(false);
-};
-
-  // 🔐 Protected Route Wrapper
-  const ProtectedRoute = ({ children }) => {
-    if (!isLoggedIn) {
-      return <Navigate to="/login" replace />;
-    }
-    return children;
+    clearAuthData();
+    setAuthState({ token: '', user: null });
   };
 
   return (
     <BrowserRouter>
       <div className="app-layout">
-
-        {isLoggedIn && <Header onLogout={handleLogout} />}
+        {isLoggedIn && <Header onLogout={handleLogout} user={currentUser} />}
 
         <main className="app-main">
           <Routes>
+            <Route path="/" element={<Navigate to={isLoggedIn ? getHomeRoute(currentUser) : '/login'} replace />} />
 
-            {/* When site loads → always go to login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-
-            {/* Login Page */}
             <Route
               path="/login"
               element={
-                isLoggedIn
-                  ? <Navigate to="/cloud-usage" replace />
-                  : <Login onLoginSuccess={handleLoginSuccess} />
+                isLoggedIn ? <Navigate to={getHomeRoute(currentUser)} replace /> : <Login onLoginSuccess={handleLoginSuccess} />
               }
             />
 
-            {/* Register Page */}
             <Route
               path="/register"
               element={
-                isLoggedIn
-                  ? <Navigate to="/cloud-usage" replace />
-                  : <Register onLoginSuccess={handleLoginSuccess} />
+                isLoggedIn ? (
+                  <Navigate to={getHomeRoute(currentUser)} replace />
+                ) : (
+                  <Register onLoginSuccess={handleLoginSuccess} />
+                )
               }
             />
 
-            {/* Protected Pages */}
             <Route
               path="/cloud-usage"
               element={
@@ -134,20 +114,18 @@ function App() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <Admin />
-                </ProtectedRoute>
+                </AdminRoute>
               }
             />
-
           </Routes>
         </main>
 
         {isLoggedIn && <Footer />}
-
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
 export default App;

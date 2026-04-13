@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import Chart from '../components/Chart';
 import { processBillingCsv } from '../utils/dataProcessor';
+import { uploadUsageRecords } from '../utils/api';
+import { dispatchAlertsUpdated, dispatchUsageUpdated } from '../utils/cloudEvents';
 import './CloudUsage.css';
-
-const ALERTS_UPDATED_EVENT = 'cloud-alerts-updated';
-const ALERTS_UPDATED_STORAGE_KEY = 'cloud-alerts-last-updated';
-const USAGE_DATA_UPDATED_EVENT = 'cloud-usage-data-updated';
-const USAGE_DATA_STORAGE_KEY = 'cloud-usage-records';
 
 const formatCurrency = (value = 0) =>
   new Intl.NumberFormat('en-US', {
@@ -19,36 +16,6 @@ const formatMetric = (value = 0) =>
   new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2,
   }).format(value);
-
-const buildUploadAlerts = (analytics) =>
-  analytics.anomalies.map((anomaly, index) => ({
-    title: anomaly.type === 'daily_cost_spike' ? 'Daily Cost Spike' : 'Service Cost Spike',
-    severity: 'high',
-    resource: anomaly.service || 'Overall Billing',
-    message: anomaly.message,
-    dateTime: anomaly.date || new Date().toISOString(),
-    previousDate: anomaly.previousDate || '',
-    currentCost: anomaly.currentCost ?? null,
-    previousCost: anomaly.previousCost ?? null,
-    type: anomaly.type,
-    alertKey: `${anomaly.type}-${anomaly.date}-${anomaly.service || 'overall'}-${index}`,
-  }));
-
-const notifyAlertsUpdated = () => {
-  const timestamp = new Date().toISOString();
-  localStorage.setItem(ALERTS_UPDATED_STORAGE_KEY, timestamp);
-  window.dispatchEvent(new CustomEvent(ALERTS_UPDATED_EVENT, { detail: { updatedAt: timestamp } }));
-};
-
-const persistUsageData = (records) => {
-  const payload = {
-    updatedAt: new Date().toISOString(),
-    records,
-  };
-
-  localStorage.setItem(USAGE_DATA_STORAGE_KEY, JSON.stringify(payload));
-  window.dispatchEvent(new CustomEvent(USAGE_DATA_UPDATED_EVENT, { detail: payload }));
-};
 
 export default function CloudUsage() {
   const [analytics, setAnalytics] = useState(null);
@@ -78,35 +45,32 @@ export default function CloudUsage() {
       }
 
       setAnalytics(processedAnalytics);
-      persistUsageData(processedAnalytics.records);
 
       const records = processedAnalytics.records.map((record) => ({
         date: record.usageDate,
+        usageDate: record.usageDate,
+        usageStartTime: record.usageStartTime,
+        usageEndTime: record.usageEndTime,
         service: record.serviceName,
+        serviceName: record.serviceName,
         cost: record.cost,
         usage: record.usageAmount,
+        usageAmount: record.usageAmount,
         resource: record.resourceName,
+        resourceName: record.resourceName,
+        region: record.region,
+        provider: record.provider,
       }));
 
-      const alerts = buildUploadAlerts(processedAnalytics);
-
       try {
-        await fetch('http://localhost:5000/api/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ records, alerts }),
-        });
-
-        notifyAlertsUpdated();
+        await uploadUsageRecords(records);
+        dispatchUsageUpdated(records);
+        dispatchAlertsUpdated();
         setMessage(
-          `Processed ${processedAnalytics.metadata.validRows} valid rows from ${file.name}. Alerts updated from uploaded anomalies.`,
+          `Processed ${processedAnalytics.metadata.validRows} valid rows from ${file.name}. Usage data and alerts were synced successfully.`,
         );
-      } catch {
-        setMessage(
-          `Processed ${processedAnalytics.metadata.validRows} valid rows locally. Backend sync failed, so alerts page may not reflect this upload yet.`,
-        );
+      } catch (uploadError) {
+        setError(uploadError.message || 'Usage upload failed. Please try again.');
       }
     } catch {
       setAnalytics(null);
@@ -285,74 +249,7 @@ export default function CloudUsage() {
             </div>
           </section>
 
-          <section className="insight-grid">
-            <article className="insight-card">
-              <h2>Service-Wise Usage</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Service</th>
-                    <th>Provider</th>
-                    <th>Total Usage</th>
-                    <th>Total Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics.serviceUsage.slice(0, 8).map((service) => (
-                    <tr key={service.service}>
-                      <td>{service.service}</td>
-                      <td>{service.provider}</td>
-                      <td>{formatMetric(service.totalUsage)}</td>
-                      <td>{formatCurrency(service.totalCost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </article>
-
-            <article className="insight-card">
-              <h2>Detected Anomalies</h2>
-              {analytics.anomalies.length === 0 ? (
-                <p className="empty-state">No spikes matched the current anomaly rules.</p>
-              ) : (
-                <div className="anomaly-list">
-                  {analytics.anomalies.slice(0, 8).map((anomaly, index) => (
-                    <div className="anomaly-item" key={`${anomaly.type}-${anomaly.date}-${index}`}>
-                      <strong>{anomaly.type === 'daily_cost_spike' ? 'Daily Cost Spike' : 'Service Spike'}</strong>
-                      <span>{anomaly.message}</span>
-                      <span>
-                        {anomaly.previousDate} to {anomaly.date}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </article>
-
-            <article className="insight-card insight-card-table">
-              <h2>Top Costly Resources</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Resource</th>
-                    <th>Service</th>
-                    <th>Usage</th>
-                    <th>Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics.topResources.map((resource) => (
-                    <tr key={resource.resource}>
-                      <td>{resource.resource}</td>
-                      <td>{resource.service}</td>
-                      <td>{formatMetric(resource.totalUsage)}</td>
-                      <td>{formatCurrency(resource.totalCost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </article>
-          </section>
+          
 
           <section className="table-section">
             <h2>Normalized Billing Preview</h2>
