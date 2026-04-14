@@ -1,11 +1,27 @@
 import { getAuthToken } from './auth';
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
-// Production : VITE_API_URL = https://your-backend.onrender.com/api  (set in Vercel dashboard)
-// Local dev  : falls back to empty string → Vite proxy forwards /api/* → localhost:5000
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') // strip trailing slash
-  : '/api';
+// Priority 1: VITE_API_URL env var set in Vercel dashboard
+// Priority 2: Auto-detect — if running on Vercel (not localhost), use Render URL
+// Priority 3: Local dev — empty string so Vite proxy handles /api/* → localhost:5000
+
+const RENDER_BACKEND = 'https://cloudoptix-dgk6.onrender.com/api';
+
+const isLocalhost = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const BASE_URL = (() => {
+  // If env var is explicitly set, always use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+  }
+  // In production (not localhost), point directly to Render
+  if (!isLocalhost) {
+    return RENDER_BACKEND;
+  }
+  // Local dev — use Vite proxy
+  return '/api';
+})();
 
 // ── Core request helper ───────────────────────────────────────────────────────
 const parseError = async (response) => {
