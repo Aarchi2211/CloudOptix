@@ -1,6 +1,9 @@
 .alerts-container {
   padding: 40px 20px;
-  background: #F8FAFC;
+  background: 
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.14), transparent 20%),
+    linear-gradient(180deg, #0f3b8f 0%, #1666c5 48%, #64bbff 100%);;
   min-height: 100vh;
 }
 
@@ -10,12 +13,12 @@
 
 .alerts-header h1 {
   font-size: 32px;
-  color: #0F172A;
+  color: white;
   margin: 0 0 10px 0;
 }
 
 .alerts-header p {
-  color: #475569;
+  color: #dcdcdc;
   margin: 0;
   font-size: 16px;
 }
@@ -36,15 +39,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border-left: 4px solid #2563EB;
-}
-
-.stat-card.critical {
-  border-left-color: #DC2626;
-}
-
-.stat-card.warning {
-  border-left-color: #F59E0B;
+  border: 1px solid #e2e8f0;
 }
 
 .stat-label {
@@ -138,24 +133,8 @@
   gap: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border-left: 5px solid;
+  border: 1px solid #e2e8f0;
   position: relative;
-}
-
-.alert-item.critical {
-  border-left-color: #e74c3c;
-}
-
-.alert-item.high {
-  border-left-color: #f39c12;
-}
-
-.alert-item.medium {
-  border-left-color: #3498db;
-}
-
-.alert-item.low {
-  border-left-color: #95a5a6;
 }
 
 .alert-item.unread {
@@ -375,6 +354,15 @@
   background-color: #2980b9;
 }
 
+.btn-action.ai-advisor {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-action.ai-advisor:hover {
+  background-color: #1d4ed8;
+}
+
 .btn-action.dismiss {
   background-color: #e74c3c;
   color: white;
@@ -382,6 +370,29 @@
 
 .btn-action.dismiss:hover {
   background-color: #c0392b;
+}
+
+.ai-advisor-panel {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(37, 99, 235, 0.18);
+}
+
+.ai-advisor-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.ai-advisor-panel p {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.75;
 }
 
 .btn-expand {

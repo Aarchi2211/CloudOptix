@@ -304,3 +304,104 @@
 .active-link::after {
   width: 100%;
 }
+
+/* ── Header actions (profile + logout) ───────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Profile button wrapper */
+.profile-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.profile-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Gradient ring that sits behind the avatar */
+.profile-btn-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #f59e0b);
+  z-index: 0;
+  transition: opacity 0.18s ease, box-shadow 0.18s ease;
+  opacity: 0.55;
+}
+
+.profile-btn:hover .profile-btn-ring,
+.profile-btn--active .profile-btn-ring {
+  opacity: 1;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* Inner avatar circle */
+.profile-avatar {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #f59e0b 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  user-select: none;
+  /* 2px white gap between ring and avatar */
+  outline: 2px solid #fff;
+  outline-offset: 0px;
+  letter-spacing: 0.02em;
+}
+
+/* Tooltip on hover */
+.profile-btn::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.profile-btn:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 768px) {
+  .profile-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .profile-avatar {
+    font-size: 13px;
+  }
+}

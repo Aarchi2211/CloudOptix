@@ -8,16 +8,34 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 
-const CHART_BLUE = '#2563eb';
+const CHART_BLUE  = '#2563eb';
 const CHART_AMBER = '#f59e0b';
+const CHART_NAVY  = '#1e3a8a';
+const CHART_SKY   = '#38bdf8';
+const CHART_INDIGO= '#6366f1';
+const CHART_TEAL  = '#0d9488';
+
+// Blue→yellow theme palette for multi-series / pie slices
+const REGION_COLORS = ['#2563eb','#f59e0b','#1d4ed8','#fbbf24','#3b82f6','#d97706'];
+
+const TOOLTIP_STYLE = {
+  borderRadius: 12,
+  border: '1px solid #fde68a',
+  boxShadow: '0 4px 16px rgba(37,99,235,.12)',
+  fontSize: 13,
+};
 
 const pageStyles = `
 :root{--primary-blue:#2563eb;--primary-blue-deep:#1d4ed8;--accent-yellow:#f59e0b;--accent-yellow-soft:#fbbf24;--success-green:#16a34a;--danger-red:#dc2626;--text-strong:#0f172a;--text-muted:#64748b;--surface-card:rgba(255,255,255,.92)}
@@ -27,10 +45,11 @@ const pageStyles = `
     linear-gradient(180deg, #0f3b8f 0%, #1666c5 48%, #64bbff 100%);}
 .dashboard-shell{max-width:1280px;margin:0 auto}
 .dashboard-card,.dashboard-empty{background:var(--surface-card);border:1px solid rgba(148,163,184,.16);border-radius:16px;box-shadow:0 18px 40px rgba(15,23,42,.08)}
-.dashboard-header{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.9fr);gap:18px;margin-bottom:22px}
+.dashboard-header{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:22px}
 .dashboard-hero,.dashboard-side,.summary-card,.chart-card,.insight-card,.alerts-section{padding:22px}
 .dashboard-badge,.insight-pill,.alert-severity{display:inline-flex;align-items:center;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.dashboard-badge{padding:8px 12px;background:linear-gradient(135deg,rgba(37,99,235,.1),rgba(245,158,11,.14));color:var(--primary-blue-deep);border:1px solid rgba(245,158,11,.16)}
+.dashboard-badge{padding:7px 16px 7px 10px;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border:none;gap:8px;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+.dashboard-badge::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.35);flex-shrink:0}
 .dashboard-hero h1{margin:16px 0 10px;font-size:clamp(2rem,3vw,3rem);line-height:1.05;color:var(--text-strong)}
 .dashboard-hero p,.dashboard-side p,.chart-card p,.insight-card p,.alerts-empty p,.dashboard-empty p{margin:0;color:var(--text-muted);line-height:1.6}
 .dashboard-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}
@@ -44,24 +63,25 @@ const pageStyles = `
 .insight-pill{padding:9px 12px;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(251,191,36,.14));color:var(--primary-blue-deep);border:1px solid rgba(245,158,11,.14)}
 .summary-grid,.chart-grid,.insights-grid,.dashboard-bottom{display:grid;gap:18px}
 .summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:22px}
-.summary-card{display:flex;gap:16px;align-items:flex-start;border-top:4px solid rgba(37,99,235,.85);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
-.summary-card:nth-child(1){border-top-color:var(--accent-yellow)}
-.summary-card:nth-child(2){border-top-color:var(--success-green)}
-.summary-card:nth-child(3){border-top-color:var(--accent-yellow-soft)}
-.summary-card:nth-child(4){border-top-color:var(--danger-red)}
+.summary-card{display:flex;gap:16px;align-items:flex-start;transition:transform .18s ease,box-shadow .18s ease}
 .summary-card:hover{transform:translateY(-2px);box-shadow:0 22px 44px rgba(15,23,42,.11)}
 .summary-icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:24px;font-weight:800;color:var(--primary-blue-deep);background:linear-gradient(135deg,#dbeafe,#fde68a);box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}
 .summary-card strong{font-size:clamp(1.35rem,2vw,2rem)}
 .summary-card:nth-child(1) strong,.insight-card:first-child strong,.insight-card:nth-child(2) strong{color:var(--accent-yellow)}
 .summary-note{margin-top:10px;color:var(--primary-blue-deep);font-size:13px;font-weight:600}
 .trend-text{margin-top:6px;font-size:12px;color:var(--text-muted)}
-.chart-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:22px}
+.chart-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto auto;margin-bottom:22px}
 .chart-head,.alerts-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
-.chart-area{height:320px}
+.chart-area{height:280px}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-muted)}
+.chart-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .insights-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:22px}
 .insight-card strong{font-size:1.1rem}
-.insight-card{border-left:4px solid rgba(245,158,11,.55)}
-.dashboard-bottom{grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr)}
+.insight-card{}
+.dashboard-bottom{display:block}
+.btn-view-all{padding:7px 16px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,.25);transition:transform .15s ease,box-shadow .15s ease}
+.btn-view-all:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(37,99,235,.32)}
 .alerts-list{display:flex;flex-direction:column;gap:14px}
 .alert-item{display:flex;align-items:flex-start;gap:14px;padding:16px;border-radius:14px;background:linear-gradient(180deg,#ffffff,#f8fbff);border:1px solid #e2e8f0;transition:box-shadow .18s ease,border-color .18s ease}
 .alert-item:hover{box-shadow:0 14px 28px rgba(15,23,42,.08);border-color:rgba(245,158,11,.18)}
@@ -144,6 +164,38 @@ const getMonthKey = (value) => {
   return date ? date.slice(0, 7) : null;
 };
 
+const getResolvedAlertRatio = (alerts = []) => {
+  if (!alerts.length) {
+    return 0;
+  }
+
+  const resolved = alerts.filter((alert) => alert.status === 'read').length;
+  return resolved / alerts.length;
+};
+
+const getMonthOverMonthImprovement = (monthlyCost = []) => {
+  if (monthlyCost.length < 2) {
+    return 0;
+  }
+
+  const latest = monthlyCost[monthlyCost.length - 1].cost;
+  const previous = monthlyCost[monthlyCost.length - 2].cost;
+
+  if (previous <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, (previous - latest) / previous));
+};
+
+const calculateEfficiencyScore = (alerts = [], monthlyCost = []) => {
+  const improvement = getMonthOverMonthImprovement(monthlyCost);
+  const resolvedRatio = getResolvedAlertRatio(alerts);
+  const baseScore = alerts.length === 0 ? 70 : 40 + resolvedRatio * 40;
+  const score = baseScore + improvement * 30;
+  return Math.round(Math.min(Math.max(score, 0), 100));
+};
+
 export const calculateTotals = (data = [], alerts = []) => {
   let totalCloudCost = 0;
   let activeResources = 0;
@@ -202,6 +254,56 @@ export const getServiceCost = (data = []) => {
       cost: Number(entry.cost.toFixed(2)),
     }))
     .sort((a, b) => b.cost - a.cost);
+};
+
+// Daily cost + usage aggregation
+export const getDailyData = (data = []) => {
+  const map = new Map();
+  data.forEach((record) => {
+    const day = getDateKey(getRecordStart(record));
+    if (!day) return;
+    const entry = map.get(day) ?? { day, cost: 0, usage: 0 };
+    entry.cost  += getRecordCost(record);
+    entry.usage += getRecordUsage(record);
+    map.set(day, entry);
+  });
+  return Array.from(map.values())
+    .sort((a, b) => a.day.localeCompare(b.day))
+    .slice(-30) // last 30 days
+    .map((e) => ({ day: e.day, cost: Number(e.cost.toFixed(2)), usage: Number(e.usage.toFixed(2)) }));
+};
+
+// Monthly usage aggregation (for monthly cost+usage chart)
+export const getMonthlyData = (data = []) => {
+  const map = new Map();
+  data.forEach((record) => {
+    const month = getMonthKey(getRecordStart(record));
+    if (!month) return;
+    const entry = map.get(month) ?? { month, cost: 0, usage: 0 };
+    entry.cost  += getRecordCost(record);
+    entry.usage += getRecordUsage(record);
+    map.set(month, entry);
+  });
+  return Array.from(map.values())
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .map((e) => ({ month: e.month, cost: Number(e.cost.toFixed(2)), usage: Number(e.usage.toFixed(2)) }));
+};
+
+// Region cost aggregation (uses region / location / zone field)
+export const getRegionCost = (data = []) => {
+  const map = new Map();
+  data.forEach((record) => {
+    const region =
+      record.region || record.location || record.zone ||
+      record.resourceLocation || record.resource_location || 'Unknown';
+    const entry = map.get(region) ?? { region, cost: 0 };
+    entry.cost += getRecordCost(record);
+    map.set(region, entry);
+  });
+  return Array.from(map.values())
+    .map((e) => ({ region: e.region, cost: Number(e.cost.toFixed(2)) }))
+    .sort((a, b) => b.cost - a.cost)
+    .slice(0, 8);
 };
 
 const getInsights = (data = []) => {
@@ -294,11 +396,23 @@ export default function Dashboard() {
 
   const totals = useMemo(() => calculateTotals(records, alerts), [records, alerts]);
   const monthlyCost = useMemo(() => getMonthlyCost(records), [records]);
-  const serviceCost = useMemo(() => getServiceCost(records).slice(0, 6), [records]);
+  const monthlyData = useMemo(() => getMonthlyData(records), [records]);
+  const dailyData   = useMemo(() => getDailyData(records), [records]);
+  const serviceCost = useMemo(() => getServiceCost(records).slice(0, 5), [records]);
+  const regionCost  = useMemo(() => getRegionCost(records), [records]);
   const insights = useMemo(() => getInsights(records), [records]);
+  const efficiencyScore = useMemo(() => calculateEfficiencyScore(alerts, monthlyCost), [alerts, monthlyCost]);
+  const monthlyImprovement = useMemo(() => getMonthOverMonthImprovement(monthlyCost), [monthlyCost]);
 
   const summaryCards = useMemo(
     () => [
+      {
+        label: 'Cloud Efficiency Score',
+        value: `${efficiencyScore}%`,
+        note: 'Score improves as alerts are resolved and monthly spend stabilizes.',
+        trend: monthlyImprovement > 0 ? `MoM improvement ${formatMetric(monthlyImprovement * 100)}%` : 'Resolve alerts to boost efficiency',
+        icon: '★',
+      },
       {
         label: 'Total Cloud Cost',
         value: formatCurrency(totals.totalCloudCost),
@@ -319,13 +433,6 @@ export default function Dashboard() {
         note: 'Usage equals zero or near-zero',
         trend: totals.idleResources ? 'Review for optimization opportunities' : 'No idle resources detected in current data',
         icon: 'I',
-      },
-      {
-        label: 'Cost Leaks Detected',
-        value: formatMetric(totals.costLeaksDetected),
-        note: 'Latest alerts from anomaly detection',
-        trend: alerts.length ? `${alerts.filter((alert) => ['high', 'critical'].includes(alert.severity)).length} high-priority alerts` : 'No recent alerts',
-        icon: '!',
       },
     ],
     [alerts, monthlyCost, records.length, totals],
@@ -367,18 +474,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <aside className="dashboard-card dashboard-side">
-            <div>
-              <h2>Cloud dashboard health</h2>
-              <p>All widgets stay aligned with the existing upload flow and current Alerts page navigation.</p>
-            </div>
 
-            <div className="dashboard-pills">
-              <div className="insight-pill">Blue cloud theme</div>
-              <div className="insight-pill">Recharts powered</div>
-              <div className="insight-pill">Responsive cards</div>
-            </div>
-          </aside>
         </header>
 
         {recordsLoading ? (
@@ -419,57 +515,176 @@ export default function Dashboard() {
             </section>
 
             <section className="chart-grid">
+
+              {/* ── Chart 1: Daily Cost & Usage ── */}
               <article className="dashboard-card chart-card">
                 <div className="chart-head">
                   <div>
-                    <span>Monthly Cost Trend</span>
-                    <h2>Total cost by month</h2>
-                    <p>Grouped using `YYYY-MM` from uploaded billing timestamps.</p>
+                    <span>Daily Trend</span>
+                    <h2>Daily cost &amp; usage</h2>
                   </div>
                 </div>
-
                 <div className="chart-area">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyCost}>
+                    <LineChart data={dailyData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%"   stopColor={CHART_BLUE}  stopOpacity={0.15}/>
+                          <stop offset="100%" stopColor={CHART_BLUE}  stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                      <XAxis dataKey="month" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{ borderRadius: 14, borderColor: '#f59e0b' }} />
-                      <Line
-                        type="monotone"
-                        dataKey="cost"
-                        name="Monthly Cost"
-                        stroke={CHART_BLUE}
-                        strokeWidth={3}
-                        dot={{ r: 4, fill: CHART_AMBER, stroke: CHART_BLUE, strokeWidth: 2 }}
-                        activeDot={{ r: 6, fill: CHART_AMBER, stroke: CHART_BLUE, strokeWidth: 2 }}
+                      <XAxis dataKey="day" stroke="#94a3b8" tick={{ fontSize: 11 }}
+                        tickFormatter={(v) => { const d = new Date(v); return isNaN(d) ? v : d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }} />
+                      <YAxis yAxisId="cost"  stroke="#94a3b8" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} width={52} />
+                      <YAxis yAxisId="usage" stroke="#94a3b8" tick={{ fontSize: 11 }} orientation="right" width={44} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        formatter={(val, name) => name === 'Cost' ? [formatCurrency(val), 'Cost'] : [formatMetric(val), 'Usage']}
+                        labelFormatter={(v) => { const d = new Date(v); return isNaN(d) ? v : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }}
                       />
+                      <Line yAxisId="cost"  type="monotone" dataKey="cost"  name="Cost"
+                        stroke={CHART_BLUE}  strokeWidth={2.5}
+                        dot={{ r: 3, fill: '#fff', stroke: CHART_BLUE,  strokeWidth: 2 }}
+                        activeDot={{ r: 5, fill: CHART_AMBER, stroke: CHART_BLUE, strokeWidth: 2 }} />
+                      <Line yAxisId="usage" type="monotone" dataKey="usage" name="Usage"
+                        stroke={CHART_AMBER} strokeWidth={2} strokeDasharray="5 3"
+                        dot={{ r: 3, fill: '#fff', stroke: CHART_AMBER, strokeWidth: 2 }}
+                        activeDot={{ r: 5, fill: CHART_BLUE, stroke: CHART_AMBER, strokeWidth: 2 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
+                <div className="chart-legend">
+                  <span className="chart-legend-item"><span className="chart-legend-dot" style={{background:CHART_BLUE}} />Cost ($)</span>
+                  <span className="chart-legend-item"><span className="chart-legend-dot" style={{background:CHART_AMBER}} />Usage (units)</span>
+                </div>
               </article>
 
+              {/* ── Chart 2: Monthly Cost & Usage ── */}
               <article className="dashboard-card chart-card">
                 <div className="chart-head">
                   <div>
-                    <span>Service-Wise Cost</span>
-                    <h2>Highest cost services</h2>
-                    <p>Top services ranked by total spend across the uploaded billing data.</p>
+                    <span>Monthly Trend</span>
+                    <h2>Monthly cost &amp; usage</h2>
                   </div>
                 </div>
-
                 <div className="chart-area">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={serviceCost} layout="vertical" margin={{ left: 28 }}>
+                    <BarChart data={monthlyData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="barBlue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%"   stopColor={CHART_BLUE}  stopOpacity={1}/>
+                          <stop offset="100%" stopColor={CHART_NAVY}  stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="barAmber" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%"   stopColor={CHART_AMBER} stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#d97706"      stopOpacity={0.8}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                      <XAxis type="number" stroke="#64748b" />
-                      <YAxis type="category" dataKey="service" width={120} stroke="#64748b" />
-                      <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{ borderRadius: 14, borderColor: '#f59e0b' }} />
-                      <Bar dataKey="cost" name="Service Cost" radius={[0, 10, 10, 0]} fill={CHART_AMBER} />
+                      <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }}
+                        tickFormatter={(v) => { const [y,m] = v.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'}); }} />
+                      <YAxis yAxisId="cost"  stroke="#94a3b8" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} width={52} />
+                      <YAxis yAxisId="usage" stroke="#94a3b8" tick={{ fontSize: 11 }} orientation="right" width={44} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        formatter={(val, name) => name === 'Cost' ? [formatCurrency(val), 'Cost'] : [formatMetric(val), 'Usage']}
+                        labelFormatter={(v) => { const [y,m] = v.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); }}
+                      />
+                      <Bar yAxisId="cost"  dataKey="cost"  name="Cost"  fill="url(#barBlue)"  radius={[4,4,0,0]} maxBarSize={32} />
+                      <Bar yAxisId="usage" dataKey="usage" name="Usage" fill="url(#barAmber)" radius={[4,4,0,0]} maxBarSize={32} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="chart-legend">
+                  <span className="chart-legend-item"><span className="chart-legend-dot" style={{background:CHART_BLUE}} />Cost ($)</span>
+                  <span className="chart-legend-item"><span className="chart-legend-dot" style={{background:CHART_AMBER}} />Usage (units)</span>
+                </div>
+              </article>
+
+              {/* ── Chart 3: Top 5 Services by Cost ── */}
+              <article className="dashboard-card chart-card">
+                <div className="chart-head">
+                  <div>
+                    <span>Service Breakdown</span>
+                    <h2>Top 5 services by cost</h2>
+                  </div>
+                </div>
+                <div className="chart-area">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={serviceCost} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="svcGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%"   stopColor={CHART_BLUE}  stopOpacity={1}/>
+                          <stop offset="100%" stopColor={CHART_AMBER} stopOpacity={0.9}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                      <XAxis type="number" stroke="#94a3b8" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                      <YAxis type="category" dataKey="service" width={110} stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                      <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [formatCurrency(v), 'Cost']} />
+                      <Bar dataKey="cost" name="Cost" fill="url(#svcGrad)" radius={[0, 6, 6, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </article>
+
+              {/* ── Chart 4: Interactive Region Cost View ── */}
+              <article className="dashboard-card chart-card">
+                <div className="chart-head">
+                  <div>
+                    <span>Region Analysis</span>
+                    <h2>Cost by region</h2>
+                  </div>
+                </div>
+                <div className="chart-area">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {regionCost.length > 0 ? (
+                      <PieChart>
+                        <defs>
+                          {REGION_COLORS.map((c, i) => (
+                            <radialGradient key={i} id={`rg${i}`} cx="50%" cy="50%" r="50%">
+                              <stop offset="0%"   stopColor={c} stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor={c} stopOpacity={0.65}/>
+                            </radialGradient>
+                          ))}
+                        </defs>
+                        <Pie
+                          data={regionCost}
+                          dataKey="cost"
+                          nameKey="region"
+                          cx="50%" cy="50%"
+                          innerRadius="38%"
+                          outerRadius="68%"
+                          paddingAngle={3}
+                          stroke="none"
+                        >
+                          {regionCost.map((_, i) => (
+                            <Cell key={i} fill={`url(#rg${i % REGION_COLORS.length})`} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, name) => [formatCurrency(v), name]} />
+                        <Legend
+                          iconType="circle"
+                          iconSize={9}
+                          formatter={(value) => <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>}
+                        />
+                      </PieChart>
+                    ) : (
+                      <BarChart data={[]} margin={{ left: 8 }}>
+                        <XAxis stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+                {regionCost.length === 0 && (
+                  <p style={{ textAlign:'center', color:'#94a3b8', fontSize:13, marginTop:8 }}>
+                    No region field found in uploaded data
+                  </p>
+                )}
+              </article>
+
             </section>
 
             <section className="insights-grid">
@@ -500,14 +715,13 @@ export default function Dashboard() {
               </article>
             </section>
 
-            <section className="dashboard-bottom">
-              <article className="dashboard-card alerts-section">
+            <article className="dashboard-card alerts-section">
                 <div className="alerts-head">
                   <div>
                     <span>Recent Alerts</span>
                     <h2>Latest 5 alert events</h2>
-                    <p>Fetched from the existing alerts source and linked to the Alerts page.</p>
                   </div>
+                  <button className="btn-view-all" onClick={() => navigate('/alerts')}>View all →</button>
                 </div>
 
                 {alertsLoading ? (
@@ -543,29 +757,6 @@ export default function Dashboard() {
                   </div>
                 )}
               </article>
-
-              <article className="dashboard-card chart-card">
-                <div className="chart-head">
-                  <div>
-                    <span>Cost Insights Panel</span>
-                    <h2>Quick optimization signals</h2>
-                    <p>Use these highlights to spot spend concentration and risky usage patterns faster.</p>
-                  </div>
-                </div>
-
-                <div className="dashboard-pills">
-                  <div className="insight-pill">
-                    Highest service: {insights.highestCostService ? insights.highestCostService.service : 'N/A'}
-                  </div>
-                  <div className="insight-pill">
-                    Expensive resource: {insights.mostExpensiveResource ? insights.mostExpensiveResource.resource : 'N/A'}
-                  </div>
-                  <div className="insight-pill">
-                    Peak day: {insights.peakUsageDay ? insights.peakUsageDay.date : 'N/A'}
-                  </div>
-                </div>
-              </article>
-            </section>
           </>
         )}
       </div>

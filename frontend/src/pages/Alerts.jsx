@@ -28,6 +28,36 @@ const formatDate = (value) => {
   return date.toLocaleString();
 };
 
+const generateAiOptimizerAdvice = (alert) => {
+  const resource = alert.resource || 'resource';
+  const message = alert.message || '';
+  const current = Number(alert.currentCost) || 0;
+  const previous = Number(alert.previousCost) || 0;
+  const regionMatch = resource.match(/([a-z]{2}-[a-z]+-\d)/i) || message.match(/([a-z]{2}-[a-z]+-\d)/i);
+  const region = regionMatch ? regionMatch[1] : 'us-east-1';
+  const costDelta = current - previous;
+  const monthlySavings = costDelta > 0 ? Math.max(Math.round(costDelta * 0.7), 15) : 20;
+  const hasIdle = /idle|unused|underutilized|stopped/i.test(message);
+  const hasSpike = /spike|unexpected|burst|surge/i.test(message);
+  const isEC2 = /ec2/i.test(resource) || /ec2/i.test(message);
+  const isRDS = /rds|db\./i.test(resource) || /database/i.test(message);
+  const isS3 = /s3|storage/i.test(resource) || /bucket/i.test(message);
+
+  const instanceType = isEC2 ? 'T3.micro' : isRDS ? 'db.t3.small' : isS3 ? 'Standard-IA' : 'smaller tier';
+  const targetPhrase = isEC2 ? `This EC2 instance in ${region}` : isRDS ? `This database instance in ${region}` : `This resource`;
+  const actionPhrase = hasIdle
+    ? `switching to a ${instanceType} instance`
+    : hasSpike
+      ? 'right-sizing usage and reviewing idle capacity'
+      : `reviewing the configuration and usage pattern of ${resource}`;
+
+  const costSentence = costDelta > 10
+    ? ` would save you about ${formatCurrency(monthlySavings)}/month without affecting performance.`
+    : ` can help trim some wasted spend and keep performance stable.`;
+
+  return `${targetPhrase} has been flagged because ${message.toLowerCase()}. We recommend ${actionPhrase}${costSentence}`;
+};
+
 export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +65,22 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeAlertId, setActiveAlertId] = useState('');
+  const [aiResponses, setAiResponses] = useState({});
+  const [aiLoadingId, setAiLoadingId] = useState('');
+
+  const handleAskAiOptimizer = async (alert) => {
+    setAiLoadingId(alert._id);
+
+    try {
+      const advice = generateAiOptimizerAdvice(alert);
+      setAiResponses((current) => ({
+        ...current,
+        [alert._id]: advice,
+      }));
+    } finally {
+      setAiLoadingId('');
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -245,6 +291,14 @@ export default function Alerts() {
                     </button>
                     <button
                       type="button"
+                      className="btn-action ai-advisor"
+                      onClick={() => handleAskAiOptimizer(alert)}
+                      disabled={aiLoadingId === alert._id}
+                    >
+                      {aiLoadingId === alert._id ? 'Thinking...' : 'Ask AI Optimizer'}
+                    </button>
+                    <button
+                      type="button"
                       className="btn-action dismiss"
                       onClick={() => handleDelete(alert._id)}
                       disabled={activeAlertId === alert._id}
@@ -252,6 +306,13 @@ export default function Alerts() {
                       {activeAlertId === alert._id ? 'Working...' : 'Delete Alert'}
                     </button>
                   </div>
+
+                  {aiResponses[alert._id] ? (
+                    <div className="ai-advisor-panel">
+                      <div className="ai-advisor-header">AI Optimizer</div>
+                      <p>{aiResponses[alert._id]}</p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

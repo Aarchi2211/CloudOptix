@@ -134,6 +134,117 @@ export default function Admin() {
     [usageRecords],
   );
 
+  const staleAdminAccounts = useMemo(() => {
+    const staleThreshold = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    return users.filter((user) => {
+      if (user.role !== 'Admin') {
+        return false;
+      }
+
+      const createdAt = user.createdAt ? new Date(user.createdAt).getTime() : NaN;
+      return Number.isFinite(createdAt) && createdAt < staleThreshold;
+    });
+  }, [users]);
+
+  const publicResourceHints = useMemo(() => {
+    const publicPattern = /public|open|internet|exposed|globally accessible|publicly accessible/i;
+    const resourceNames = new Set();
+
+    usageRecords.forEach((record) => {
+      const source = `${record.resource || ''} ${record.service || ''} ${record.provider || ''}`;
+      if (publicPattern.test(source)) {
+        resourceNames.add(record.resource || record.service || 'Unknown Resource');
+      }
+    });
+
+    alerts.forEach((alert) => {
+      if (publicPattern.test(`${alert.title || ''} ${alert.message || ''}`)) {
+        resourceNames.add(alert.resource || 'Unknown Resource');
+      }
+    });
+
+    return Array.from(resourceNames).slice(0, 8);
+  }, [usageRecords, alerts]);
+
+  const idleAndHighRiskResources = useMemo(() => {
+    const idle = new Set(
+      alerts
+        .filter((alert) => alert.type === 'idle_resource' || /idle/i.test(`${alert.title || ''} ${alert.message || ''}`))
+        .map((alert) => alert.resource),
+    );
+
+    const costRisk = new Set(
+      alerts
+        .filter(
+          (alert) =>
+            alert.type === 'high_cost' ||
+            alert.severity === 'critical' ||
+            /over-provisioned|low utilization/i.test(`${alert.title || ''} ${alert.message || ''}`),
+        )
+        .map((alert) => alert.resource),
+    );
+
+    return Array.from(new Set([...idle].filter((resource) => costRisk.has(resource))));
+  }, [alerts]);
+
+  const securityAuditCards = useMemo(
+    () => [
+      {
+        label: 'Stale Admin Accounts',
+        value: staleAdminAccounts.length,
+        accent: 'yellow',
+        detail: 'Admin accounts older than 90 days',
+      },
+      {
+        label: 'Public Resource Signals',
+        value: publicResourceHints.length,
+        accent: 'warning',
+        detail: 'Resources that may be exposed to public access',
+      },
+      {
+        label: 'Idle + High Risk',
+        value: idleAndHighRiskResources.length,
+        accent: 'dark',
+        detail: 'Resources with idle cost and security exposure',
+      },
+    ],
+    [idleAndHighRiskResources.length, publicResourceHints.length, staleAdminAccounts.length],
+  );
+
+  const securityFindings = useMemo(() => {
+    const findings = [];
+
+    if (staleAdminAccounts.length) {
+      findings.push({
+        title: `${staleAdminAccounts.length} stale admin account(s)`,
+        detail: 'Review access and remove or rotate accounts that are no longer active.',
+      });
+    }
+
+    if (publicResourceHints.length) {
+      findings.push({
+        title: `${publicResourceHints.length} public-facing resource(s)`,
+        detail: 'Inspect these resources for open access and enforce stricter permissions.',
+      });
+    }
+
+    if (idleAndHighRiskResources.length) {
+      findings.push({
+        title: `${idleAndHighRiskResources.length} idle & critical resource(s)`,
+        detail: 'These are top candidates for both cost and security remediation.',
+      });
+    }
+
+    if (!findings.length) {
+      findings.push({
+        title: 'No critical security audit findings',
+        detail: 'Current data does not show obvious idle admin or public-resource risks.',
+      });
+    }
+
+    return findings;
+  }, [idleAndHighRiskResources.length, publicResourceHints.length, staleAdminAccounts.length]);
+
   if (loading) {
     return (
       <div className="admin-page">
@@ -185,6 +296,64 @@ export default function Admin() {
               <strong>{card.value}</strong>
             </article>
           ))}
+        </section>
+
+        <section className="admin-security-grid">
+          <article className="admin-card security-card">
+            <div className="section-heading">
+              <div>
+                <span>Security Audit</span>
+                <h2>Idle, public and admin risk signals</h2>
+              </div>
+            </div>
+
+            <div className="security-kpi-grid">
+              {securityAuditCards.map((item) => (
+                <div key={item.label} className={`security-tile ${item.accent}`}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <p>{item.detail}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="security-findings">
+              {securityFindings.map((finding) => (
+                <div key={finding.title} className="security-finding">
+                  <div>
+                    <strong>{finding.title}</strong>
+                    <p>{finding.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {publicResourceHints.length > 0 && (
+              <div className="security-note">
+                <strong>Resources to inspect</strong>
+                <p>Potential publicly accessible or exposed resources identified from naming and alert patterns.</p>
+                <ul>
+                  {publicResourceHints.map((resource) => (
+                    <li key={resource}>{resource}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {staleAdminAccounts.length > 0 && (
+              <div className="security-note">
+                <strong>Stale admin accounts</strong>
+                <p>Admin users that have existed for over 90 days without obvious changes in the dataset.</p>
+                <ul>
+                  {staleAdminAccounts.map((user) => (
+                    <li key={user.id || user.email}>
+                      {user.name} ({user.email})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </article>
         </section>
 
         {actionError && <div className="admin-inline-error">{actionError}</div>}

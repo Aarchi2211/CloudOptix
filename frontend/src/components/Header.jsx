@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchAlerts } from '../utils/api';
-import { ALERTS_UPDATED_EVENT } from '../utils/cloudEvents';
+import { ALERTS_UPDATED_EVENT, CSV_UPLOADED_KEY, USAGE_DATA_UPDATED_EVENT } from '../utils/cloudEvents';
 import logo from '../assets/CloudOptix_logo.png';
 import './Header.css';
 
@@ -9,21 +9,22 @@ export default function Header({ onLogout, user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [alertCount, setAlertCount] = useState(0);
+  const [csvUploaded, setCsvUploaded] = useState(() => localStorage.getItem(CSV_UPLOADED_KEY) === 'true');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     const loadAlerts = async () => {
+      // Only fetch & show count if a CSV has been uploaded
+      if (!localStorage.getItem(CSV_UPLOADED_KEY)) return;
       try {
         const data = await fetchAlerts();
         if (mounted) {
-          setAlertCount(Array.isArray(data) ? data.filter((alert) => alert.status === 'unread').length : 0);
+          setAlertCount(Array.isArray(data) ? data.filter((a) => a.status === 'unread').length : 0);
         }
       } catch {
-        if (mounted) {
-          setAlertCount(0);
-        }
+        if (mounted) setAlertCount(0);
       }
     };
 
@@ -31,12 +32,20 @@ export default function Header({ onLogout, user }) {
       loadAlerts();
     };
 
+    // When a CSV is uploaded, mark the flag and immediately load the count
+    const handleUsageUpdated = () => {
+      setCsvUploaded(true);
+      loadAlerts();
+    };
+
     loadAlerts();
     window.addEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
+    window.addEventListener(USAGE_DATA_UPDATED_EVENT, handleUsageUpdated);
 
     return () => {
       mounted = false;
       window.removeEventListener(ALERTS_UPDATED_EVENT, handleAlertsUpdated);
+      window.removeEventListener(USAGE_DATA_UPDATED_EVENT, handleUsageUpdated);
     };
   }, []);
 
@@ -93,15 +102,29 @@ export default function Header({ onLogout, user }) {
                 }}
               >
                 Alerts
-                {alertCount > 0 && <span className="alert-badge">{alertCount}</span>}
+                {csvUploaded && alertCount > 0 && <span className="alert-badge">{alertCount}</span>}
               </a>
             </li>
           </ul>
         </nav>
 
-        <button className="logout-btn" onClick={onLogout}>
-          Logout
-        </button>
+        <div className="header-actions">
+          <button
+            className={`profile-btn${location.pathname === '/profile' ? ' profile-btn--active' : ''}`}
+            onClick={() => navigate('/profile')}
+            title={user?.name ? `${user.name}'s profile` : 'My profile'}
+            aria-label="View profile"
+          >
+            <span className="profile-btn-ring" aria-hidden="true" />
+            <span className="profile-avatar">
+              {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
+            </span>
+          </button>
+
+          <button className="logout-btn" onClick={() => { onLogout(); navigate('/login'); }}>
+            Logout
+          </button>
+        </div>
       </div>
     </header>
   );

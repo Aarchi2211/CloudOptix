@@ -1,4 +1,4 @@
-const AUTH_STORAGE_KEY = 'cloud-cost-auth';
+const AUTH_STORAGE_KEY = 'currentUser';
 
 export const getStoredAuth = () => {
   try {
@@ -37,4 +37,4 @@ export const getAuthToken = () => getStoredAuth().token;
 
 export const getAuthUser = () => getStoredAuth().user;
 
-export const getHomeRoute = (user) => (user?.role === 'Admin' ? '/admin' : '/cloud-usage');
+export const getHomeRoute = (user) => '/cloud-usage';

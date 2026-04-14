@@ -49,17 +49,17 @@ const pageStyles = `
 .reports-btn.secondary{background:linear-gradient(135deg,#fff7dd,#fde68a);color:#92400e;border:1px solid rgba(245,158,11,.28)}
 .reports-btn.secondary:hover{box-shadow:0 0 0 3px rgba(245,158,11,.16)}
 .reports-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.reports-simulation{display:grid;gap:16px;margin-bottom:22px}
+.reports-simulation-summary{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.reports-simulation-summary span{display:inline-flex;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#eff6ff,#fef3c7);color:#0f3f82;font-size:13px;font-weight:700}
+.reports-simulation-label{font-size:14px;color:#334155;line-height:1.4}
 .reports-pill-row{display:flex;gap:10px;flex-wrap:wrap}
 .reports-segmented{display:inline-flex;padding:4px;border-radius:999px;background:linear-gradient(180deg,#eff6ff,#e2e8f0);border:1px solid rgba(245,158,11,.14)}
 .reports-segmented button{border:none;background:transparent;color:#0f3f82;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer}
 .reports-segmented .active{background:linear-gradient(135deg,var(--primary-blue),var(--accent-yellow));color:#fff}
 .reports-stats,.reports-insights,.reports-charts{display:grid;gap:18px}
 .reports-stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:22px}
-.reports-stat{border-top:4px solid rgba(37,99,235,.75);transition:transform .18s ease,box-shadow .18s ease}
-.reports-stat:nth-child(1){border-top-color:var(--accent-yellow)}
-.reports-stat:nth-child(2){border-top-color:var(--success-green)}
-.reports-stat:nth-child(3){border-top-color:var(--primary-blue)}
-.reports-stat:nth-child(4){border-top-color:var(--danger-red)}
+.reports-stat{transition:transform .18s ease,box-shadow .18s ease}
 .reports-stat:hover{transform:translateY(-2px);box-shadow:0 22px 44px rgba(15,23,42,.11)}
 .reports-stat strong{font-size:clamp(1.35rem,2vw,2rem)}
 .reports-stat:first-child strong,.reports-insight strong,.reports-table td:last-child{color:var(--accent-yellow)}
@@ -68,17 +68,28 @@ const pageStyles = `
 .reports-panel-head,.reports-table-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
 .reports-panel-chart{height:320px}
 .reports-insights{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:22px}
-.reports-insight{border-left:4px solid rgba(245,158,11,.55)}
+.reports-insight{}
 .reports-insight-text{margin-top:8px;color:#475569;line-height:1.5}
-.reports-bottom{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:18px}
-.reports-table-wrap{overflow-x:auto}
-.reports-table{width:100%;border-collapse:collapse}
-.reports-table th,.reports-table td{padding:14px 8px;text-align:left;border-bottom:1px solid #e2e8f0}
-.reports-table td{color:#1e293b;font-size:14px}
-.reports-table tbody tr:hover{background:rgba(245,158,11,.06)}
-.reports-rank{width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#dbeafe,#fde68a);color:var(--primary-blue-deep);font-weight:800}
-.reports-resource{font-weight:700;color:var(--text-strong)}
-.reports-service{margin-top:4px;font-size:13px;color:var(--text-muted)}
+.reports-bottom{display:grid;grid-template-columns:1fr;gap:18px}
+.reports-table-full{width:100%}
+.reports-table-badge{display:inline-flex;align-items:center;padding:6px 14px;border-radius:999px;background:linear-gradient(135deg,#dbeafe,#fde68a);color:#1d4ed8;font-size:13px;font-weight:700;white-space:nowrap}
+.rcr-grid{display:flex;flex-direction:column;width:100%;font-family:"Inter",system-ui,sans-serif}
+.rcr-header,.rcr-row{display:grid;grid-template-columns:0.5fr 2fr 1fr 1fr 1fr 1fr 1.5fr;align-items:center}
+.rcr-header{background:#f8fafc;border-radius:10px 10px 0 0;border-bottom:2px solid #e2e8f0;padding:10px 16px}
+.rcr-header span{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#64748b;white-space:nowrap}
+.rcr-row{padding:13px 16px;border-bottom:1px solid #f1f5f9;transition:background .12s ease}
+.rcr-row:last-child{border-bottom:none}
+.rcr-row:hover{background:#f1f5f9}
+.rcr-index{font-size:13px;font-weight:600;color:#94a3b8}
+.rcr-resource{font-size:14px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+.rcr-service-tag{display:inline-block;padding:3px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rcr-region{font-size:13px;color:#64748b}
+.rcr-usage{font-size:13px;color:#475569}
+.rcr-cost{font-size:14px;font-weight:700;color:#0f172a}
+.rcr-share{display:flex;align-items:center;gap:8px}
+.rcr-bar-track{flex:1;height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden;min-width:40px}
+.rcr-bar-fill{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#f59e0b);transition:width .35s ease}
+.rcr-pct{font-size:12px;font-weight:600;color:#64748b;white-space:nowrap;min-width:30px}
 .reports-empty{padding:42px 24px;text-align:center}
 .reports-empty h2{margin:0 0 10px;color:var(--text-strong)}
 .reports-empty-icon{width:72px;height:72px;margin:0 auto 18px;border-radius:24px;display:grid;place-items:center;background:linear-gradient(135deg,#dbeafe,#fde68a);color:var(--primary-blue-deep);font-weight:900;letter-spacing:.08em}
@@ -204,6 +215,29 @@ export const getServiceUsage = (data = []) => {
     .sort((a, b) => b.cost - a.cost);
 };
 
+const getSimulationData = (serviceUsage = [], scenario = 'none') => {
+  return serviceUsage.map((entry) => {
+    const current = entry.cost;
+    let projected = current;
+
+    // S3 → Glacier: reduce S3/storage costs by 60%
+    if (scenario === 's3-glacier' && /s3|storage|bucket/i.test(entry.service)) {
+      projected = current * 0.40;
+    }
+
+    // Weekend Dev Shutdown: reduce EC2/RDS costs by 28% (2 of 7 days off)
+    if (scenario === 'weekend-dev-servers' && /ec2|rds|compute|instance|database/i.test(entry.service)) {
+      projected = current * 0.72;
+    }
+
+    return {
+      service: entry.service,
+      current: Number(current.toFixed(2)),
+      projected: Number(Math.max(projected, 0).toFixed(2)),
+    };
+  });
+};
+
 const getTopResources = (data = []) => {
   const map = new Map();
   data.forEach((record) => {
@@ -252,10 +286,15 @@ const getInsights = (records = [], dailyUsage = [], serviceUsage = []) => {
 export default function Reports() {
   const { records, loading, error } = useUsageRecords();
   const [serviceMetric, setServiceMetric] = useState('cost');
+  const [simulationScenario, setSimulationScenario] = useState('none');
 
   const dailyUsage = useMemo(() => getDailyUsage(records), [records]);
   const monthlyUsage = useMemo(() => getMonthlyUsage(records), [records]);
   const serviceUsage = useMemo(() => getServiceUsage(records), [records]);
+  const simulationData = useMemo(
+    () => getSimulationData(serviceUsage, simulationScenario),
+    [serviceUsage, simulationScenario],
+  );
   const topResources = useMemo(() => getTopResources(records), [records]);
   const insights = useMemo(() => getInsights(records, dailyUsage, serviceUsage), [records, dailyUsage, serviceUsage]);
 
@@ -288,6 +327,16 @@ export default function Reports() {
       })),
     [serviceMetric, serviceUsage],
   );
+
+  const simulationTotal = useMemo(() => {
+    const current = simulationData.reduce((sum, item) => sum + item.current, 0);
+    const projected = simulationData.reduce((sum, item) => sum + item.projected, 0);
+    return {
+      current: Number(current.toFixed(2)),
+      projected: Number(projected.toFixed(2)),
+      savings: Number((current - projected).toFixed(2)),
+    };
+  }, [simulationData]);
 
   const handleDownloadPDF = () => {
     const element = document.querySelector('.reports-shell');
@@ -407,20 +456,161 @@ export default function Reports() {
           </section>
         ) : (
           <>
+            {/* ── Toolbar ── */}
             <section className="reports-toolbar">
-              <div className="reports-pill-row">
-                <div className="reports-pill">Rows: {formatMetric(records.length)}</div>
-                <div className="reports-pill">Daily points: {dailyUsage.length}</div>
-                <div className="reports-pill">Monthly points: {monthlyUsage.length}</div>
+              <div className="rpt-toolbar-left">
+                <div className="rpt-stat-pill">
+                  <span className="rpt-stat-pill-val">{formatMetric(records.length)}</span>
+                  <span className="rpt-stat-pill-lbl">Rows</span>
+                </div>
+                <div className="rpt-stat-pill">
+                  <span className="rpt-stat-pill-val">{dailyUsage.length}</span>
+                  <span className="rpt-stat-pill-lbl">Daily pts</span>
+                </div>
+                <div className="rpt-stat-pill">
+                  <span className="rpt-stat-pill-val">{monthlyUsage.length}</span>
+                  <span className="rpt-stat-pill-lbl">Months</span>
+                </div>
               </div>
 
-              <div className="reports-segmented" aria-label="Service metric selector">
-                <button type="button" className={serviceMetric === 'cost' ? 'active' : ''} onClick={() => setServiceMetric('cost')}>
-                  Service Cost
-                </button>
-                <button type="button" className={serviceMetric === 'usage' ? 'active' : ''} onClick={() => setServiceMetric('usage')}>
-                  Service Usage
-                </button>
+              <div className="rpt-tabs" role="tablist" aria-label="Service metric">
+                {[
+                  { key: 'cost',  label: 'Cost View' },
+                  { key: 'usage', label: 'Usage View' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    role="tab"
+                    type="button"
+                    aria-selected={serviceMetric === tab.key}
+                    className={`rpt-tab${serviceMetric === tab.key ? ' rpt-tab--active' : ''}`}
+                    onClick={() => setServiceMetric(tab.key)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* ── What-If Simulation ── */}
+            <section className="rpt-sim-card reports-card">
+
+              {/* header */}
+              <div className="rpt-sim-header">
+                <div>
+                  <p className="rpt-sim-eyebrow">What-If Simulations</p>
+                  <h2 className="rpt-sim-title">Projected vs Current cost planning</h2>
+                  <p className="rpt-sim-desc">
+                    Select a scenario to model how infrastructure policy changes reduce your monthly bill.
+                  </p>
+                </div>
+              </div>
+
+              {/* scenario tabs */}
+              <div className="rpt-sim-tabs" role="tablist" aria-label="Simulation scenario">
+                {[
+                  {
+                    key: 'none',
+                    label: 'Current (Actual)',
+                    icon: '📊',
+                    desc: 'No changes applied — baseline spend.',
+                  },
+                  {
+                    key: 's3-glacier',
+                    label: 'S3 → Glacier Transition',
+                    icon: '🧊',
+                    desc: 'Move infrequently accessed S3 data to Glacier. Reduces S3 costs by 60%.',
+                  },
+                  {
+                    key: 'weekend-dev-servers',
+                    label: 'Weekend Dev Shutdown',
+                    icon: '🌙',
+                    desc: 'Shut down EC2 & RDS dev instances on weekends (2/7 days). Saves 28%.',
+                  },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    role="tab"
+                    type="button"
+                    aria-selected={simulationScenario === s.key}
+                    className={`rpt-sim-tab${simulationScenario === s.key ? ' rpt-sim-tab--active' : ''}`}
+                    onClick={() => setSimulationScenario(s.key)}
+                  >
+                    <span className="rpt-sim-tab-icon">{s.icon}</span>
+                    <span className="rpt-sim-tab-label">{s.label}</span>
+                    <span className="rpt-sim-tab-desc">{s.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* impact summary + chart */}
+              <div className="rpt-sim-body">
+
+                {/* Impact Summary card */}
+                <div className={`rpt-sim-impact${simulationScenario !== 'none' && simulationTotal.savings > 0 ? ' rpt-sim-impact--saving' : ''}`}>
+                  <p className="rpt-sim-impact-label">
+                    {simulationScenario === 'none' ? 'Current Monthly Bill' : 'Potential Savings'}
+                  </p>
+
+                  <p className="rpt-sim-impact-value">
+                    {simulationScenario === 'none'
+                      ? formatCurrency(simulationTotal.current)
+                      : formatCurrency(simulationTotal.savings)}
+                  </p>
+
+                  {simulationScenario !== 'none' && (
+                    <p className="rpt-sim-impact-compare">
+                      Projected monthly bill:{' '}
+                      <strong>{formatCurrency(simulationTotal.projected)}</strong>
+                      {' '}
+                      <span className="rpt-sim-impact-vs">
+                        vs {formatCurrency(simulationTotal.current)} current
+                      </span>
+                    </p>
+                  )}
+
+                  {simulationScenario !== 'none' && simulationTotal.savings > 0 && (
+                    <p className="rpt-sim-impact-pct">
+                      ↓ {((simulationTotal.savings / simulationTotal.current) * 100).toFixed(1)}% reduction
+                    </p>
+                  )}
+
+                  {simulationScenario !== 'none' && simulationTotal.savings === 0 && (
+                    <p className="rpt-sim-impact-none">
+                      No matching services found in your data for this scenario.
+                    </p>
+                  )}
+                </div>
+
+                {/* Bar chart */}
+                <div className="rpt-sim-chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={simulationData.slice(0, 6)}
+                      margin={{ top: 8, right: 16, left: 0, bottom: 32 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="service"
+                        stroke="#94a3b8"
+                        tick={{ fontSize: 11 }}
+                        interval={0}
+                        angle={-20}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} width={58} />
+                      <Tooltip
+                        formatter={(v) => [formatCurrency(v)]}
+                        contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 13 }}
+                      />
+                      <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="current"   name="Current Cost"   fill={CHART_BLUE}  radius={[4,4,0,0]} maxBarSize={36} />
+                      <Bar dataKey="projected" name="Projected Cost" fill={CHART_AMBER} radius={[4,4,0,0]} maxBarSize={36} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
               </div>
             </section>
 
@@ -561,6 +751,7 @@ export default function Reports() {
                   </ResponsiveContainer>
                 </div>
               </article>
+
             </section>
 
             <section className="reports-insights">
@@ -593,57 +784,49 @@ export default function Reports() {
               </article>
             </section>
 
-            <section className="reports-bottom">
-              <article className="reports-card reports-table-card">
+                        <section className="reports-bottom">
+              <article className="reports-card reports-table-card reports-table-full">
                 <div className="reports-table-head">
                   <div>
                     <span>Top Costly Resources</span>
                     <h2>Top 5 resources by spend</h2>
-                    <p>Highest individual resource costs across the uploaded dataset.</p>
+                  </div>
+                  <div className="reports-table-badge">
+                    {formatCurrency(topResources.reduce((s, r) => s + r.cost, 0))} total
                   </div>
                 </div>
-                <div className="reports-table-wrap">
-                  <table className="reports-table">
-                    <thead>
-                      <tr>
-                        <th>Rank</th>
-                        <th>Resource</th>
-                        <th>Region</th>
-                        <th>Usage</th>
-                        <th>Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topResources.map((resource, index) => (
-                        <tr key={`${resource.resource}-${resource.service}`}>
-                          <td><span className="reports-rank">{index + 1}</span></td>
-                          <td>
-                            <div className="reports-resource">{resource.resource}</div>
-                            <div className="reports-service">{resource.service}</div>
-                          </td>
-                          <td>{resource.region}</td>
-                          <td>{formatMetric(resource.usage)}</td>
-                          <td>{formatCurrency(resource.cost)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-
-              <article className="reports-card reports-table-card">
-                <div className="reports-table-head">
-                  <div>
-                    <span>Cost Insights Panel</span>
-                    <h2>How this report is grouped</h2>
-                    <p>All report widgets are calculated in this component without changing the upload logic.</p>
+                <div className="rcr-grid">
+                  {/* Header row */}
+                  <div className="rcr-header">
+                    <span>#</span>
+                    <span>Resource</span>
+                    <span>Service</span>
+                    <span>Region</span>
+                    <span>Usage</span>
+                    <span>Cost</span>
+                    <span>Share</span>
                   </div>
-                </div>
-                <div className="reports-pill-row">
-                  <div className="reports-pill">Summary cards from uploaded rows</div>
-                  <div className="reports-pill">Daily grouping from usage start date</div>
-                  <div className="reports-pill">Monthly grouping in YYYY-MM</div>
-                  <div className="reports-pill">Service analysis for cost and usage</div>
+                  {/* Data rows */}
+                  {topResources.map((resource, index) => {
+                    const totalCost = topResources.reduce((s, r) => s + r.cost, 0);
+                    const share = totalCost > 0 ? (resource.cost / totalCost) * 100 : 0;
+                    return (
+                      <div className="rcr-row" key={`${resource.resource}-${resource.service}`}>
+                        <span className="rcr-index">{index + 1}</span>
+                        <span className="rcr-resource">{resource.resource}</span>
+                        <span className="rcr-service-tag">{resource.service}</span>
+                        <span className="rcr-region">{resource.region}</span>
+                        <span className="rcr-usage">{formatMetric(resource.usage)}</span>
+                        <span className="rcr-cost">{formatCurrency(resource.cost)}</span>
+                        <span className="rcr-share">
+                          <span className="rcr-bar-track">
+                            <span className="rcr-bar-fill" style={{width:`${Math.min(share,100).toFixed(1)}%`}} />
+                          </span>
+                          <span className="rcr-pct">{share.toFixed(0)}%</span>
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </article>
             </section>

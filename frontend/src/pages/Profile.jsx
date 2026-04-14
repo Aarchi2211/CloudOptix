@@ -114,11 +114,10 @@ export default function Profile() {
 
       <div className="profile-content">
         <aside className="profile-sidebar">
-          <div className="profile-avatar">
             <div className="avatar-placeholder">{userDetails.name.charAt(0).toUpperCase()}</div>
             <h3>{userDetails.name}</h3>
             <p className="role-badge">{userDetails.role}</p>
-          </div>
+  
 
           <nav className="profile-nav">
             <button className={`nav-item ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>

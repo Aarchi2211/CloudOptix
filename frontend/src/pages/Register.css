@@ -82,7 +82,7 @@
 .register-button {
   width: 100%;
   padding: 13px;
-  background: linear-gradient(135deg, #2563eb, #38bdf8, #f59e0b);
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
   color: white;
   border: none;
   border-radius: 14px;
@@ -95,7 +95,7 @@
 .register-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
-  background: linear-gradient(135deg, #1e40af, #0ea5e9, #d97706);
+  background: linear-gradient(135deg, #1e40af, #0ea5e9);
 }
 
 .register-button:disabled {

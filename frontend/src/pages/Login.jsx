@@ -32,8 +32,7 @@ export default function Login({ onLoginSuccess }) {
         });
       }
 
-      const redirectTarget = location.state?.from?.pathname;
-      navigate(redirectTarget || getHomeRoute(data.user), { replace: true });
+      navigate(getHomeRoute(data.user), { replace: true });
     } catch (loginError) {
       setError(loginError.message || 'Network error. Please try again.');
     } finally {

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
+
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -14,15 +16,17 @@ import Reports from "./pages/Reports";
 import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
-import { clearAuthData, getHomeRoute, getStoredAuth } from './utils/auth';
+
+import { clearAuthData, getStoredAuth, getHomeRoute } from './utils/auth';
 
 function App() {
   const [authState, setAuthState] = useState(() => getStoredAuth());
+
   const isLoggedIn = Boolean(authState.token);
   const currentUser = authState.user;
 
-  const handleLoginSuccess = (nextAuthState) => {
-    setAuthState(nextAuthState);
+  const handleLoginSuccess = (data) => {
+    setAuthState(data);
   };
 
   const handleLogout = () => {
@@ -35,81 +39,46 @@ function App() {
       <div className="app-layout">
         {isLoggedIn && <Header onLogout={handleLogout} user={currentUser} />}
 
-        <main className="app-main">
+        <div className="app-main">
           <Routes>
-            <Route path="/" element={<Navigate to={isLoggedIn ? getHomeRoute(currentUser) : '/login'} replace />} />
+            {/* 🔥 DEFAULT ROUTE */}
+            <Route
+              path="/"
+              element={
+                isLoggedIn
+                  ? <Navigate to={getHomeRoute(currentUser)} replace />
+                  : <Navigate to="/login" replace />
+              }
+            />
 
+            {/* LOGIN */}
             <Route
               path="/login"
               element={
-                isLoggedIn ? <Navigate to={getHomeRoute(currentUser)} replace /> : <Login onLoginSuccess={handleLoginSuccess} />
+                isLoggedIn
+                  ? <Navigate to={getHomeRoute(currentUser)} replace />
+                  : <Login onLoginSuccess={handleLoginSuccess} />
               }
             />
 
+            {/* REGISTER */}
             <Route
               path="/register"
               element={
-                isLoggedIn ? (
-                  <Navigate to={getHomeRoute(currentUser)} replace />
-                ) : (
-                  <Register onLoginSuccess={handleLoginSuccess} />
-                )
+                isLoggedIn
+                  ? <Navigate to={getHomeRoute(currentUser)} replace />
+                  : <Register />
               }
             />
 
-            <Route
-              path="/cloud-usage"
-              element={
-                <ProtectedRoute>
-                  <CloudUsage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/cost-leaks"
-              element={
-                <ProtectedRoute>
-                  <CostLeak />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/alerts"
-              element={
-                <ProtectedRoute>
-                  <Alerts />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/cloud-usage" element={<CloudUsage />} />
+              <Route path="/cost-leaks" element={<CostLeak />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/profile" element={<Profile />} />
+            </Route>
 
             <Route
               path="/admin"
@@ -120,7 +89,7 @@ function App() {
               }
             />
           </Routes>
-        </main>
+        </div>
 
         {isLoggedIn && <Footer />}
       </div>

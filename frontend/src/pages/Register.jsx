@@ -19,21 +19,9 @@ export default function Register({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const data = await registerUser({ name, email, password, role });
+      await registerUser({ name, email, password, role });
 
-      storeAuthData({
-        token: data.token,
-        user: data.user,
-      });
-
-      if (onLoginSuccess) {
-        onLoginSuccess({
-          token: data.token,
-          user: data.user,
-        });
-      }
-
-      navigate(getHomeRoute(data.user), { replace: true });
+      navigate('/login', { replace: true });
     } catch (registerError) {
       setError(registerError.message || 'Network error. Please try again.');
     } finally {
