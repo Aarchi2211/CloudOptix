@@ -11,11 +11,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const createToken = (user) =>
   jwt.sign(
-    {
-      sub: user._id.toString(),
-      role: user.role,
-      email: user.email,
-    },
+    { sub: user._id.toString(), role: user.role, email: user.email },
     process.env.JWT_SECRET || "dev-jwt-secret",
     { expiresIn: "7d" },
   );
@@ -25,28 +21,21 @@ const buildAuthPayload = (user) => ({
   user: user.toSafeObject(),
 });
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-
-    if (!name || !email || !password) {
+    if (!name || !email || !password)
       return res.status(400).json({ error: "Name, email, and password are required." });
-    }
-
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email))
       return res.status(400).json({ error: "Please enter a valid email address." });
-    }
-
-    if (String(password).length < 6) {
+    if (String(password).length < 6)
       return res.status(400).json({ error: "Password must be at least 6 characters long." });
-    }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const existingUser = await User.findOne({ email: normalizedEmail }).lean();
-
-    if (existingUser) {
+    if (await User.findOne({ email: normalizedEmail }).lean())
       return res.status(409).json({ error: "An account with this email already exists." });
-    }
 
     const user = await User.create({
       name: name.trim(),
@@ -54,11 +43,7 @@ router.post("/register", async (req, res) => {
       password,
       role: role === "Admin" ? "Admin" : "User",
     });
-
-    return res.status(201).json({
-      message: "Registration successful.",
-      ...buildAuthPayload(user),
-    });
+    return res.status(201).json({ message: "Registration successful.", ...buildAuthPayload(user) });
   } catch (error) {
     console.error("Registration error:", error);
     return res.status(500).json({ error: "Registration failed. Please try again." });
@@ -68,47 +53,28 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ error: "Email and password are required." });
-    }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = await User.findOne({ email: normalizedEmail }).select("+password");
-
-    if (!user) {
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select("+password");
+    if (!user || !(await user.comparePassword(password)))
       return res.status(401).json({ error: "Invalid email or password." });
-    }
 
-    const isPasswordValid = await user.comparePassword(password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid email or password." });
-    }
-
-    return res.json({
-      message: "Login successful.",
-      ...buildAuthPayload(user),
-    });
+    return res.json({ message: "Login successful.", ...buildAuthPayload(user) });
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ error: "Login failed. Please try again." });
   }
 });
 
+// ── Users (Admin only) ────────────────────────────────────────────────────────
+
 router.get("/users", authenticate, authorizeRoles("Admin"), async (_req, res) => {
   try {
     const users = await User.find().sort({ createdAt: -1 }).lean();
-
-    return res.json(
-      users.map((user) => ({
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt,
-      })),
-    );
+    return res.json(users.map((u) => ({
+      id: u._id.toString(), name: u.name, email: u.email, role: u.role, createdAt: u.createdAt,
+    })));
   } catch (error) {
     console.error("Fetch users error:", error);
     return res.status(500).json({ error: "Failed to fetch users." });
@@ -118,23 +84,97 @@ router.get("/users", authenticate, authorizeRoles("Admin"), async (_req, res) =>
 router.delete("/users/:id", authenticate, authorizeRoles("Admin"), async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (req.user.id === id) {
+    if (req.user.id === id)
       return res.status(400).json({ error: "Admin accounts cannot delete themselves." });
-    }
-
-    const deletedUser = await User.findByIdAndDelete(id);
-
-    if (!deletedUser) {
-      return res.status(404).json({ error: "User not found." });
-    }
-
+    const deleted = await User.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: "User not found." });
     return res.json({ message: "User deleted successfully." });
   } catch (error) {
     console.error("Delete user error:", error);
     return res.status(500).json({ error: "Failed to delete user." });
   }
 });
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+
+// GET /api/profile
+router.get("/profile", authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).lean();
+    if (!user) return res.status(404).json({ error: "User not found." });
+    return res.json({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    return res.status(500).json({ error: "Failed to fetch profile." });
+  }
+});
+
+// PATCH /api/profile — update name only, bypasses pre-save hook via updateOne
+router.patch("/profile", authenticate, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !String(name).trim())
+      return res.status(400).json({ error: "Name is required." });
+
+    const result = await User.updateOne(
+      { _id: req.user.id },
+      { $set: { name: String(name).trim() } },
+    );
+
+    if (result.matchedCount === 0)
+      return res.status(404).json({ error: "User not found." });
+
+    const updated = await User.findById(req.user.id).lean();
+    return res.json({
+      message: "Profile updated successfully.",
+      user: {
+        id: updated._id.toString(),
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+        createdAt: updated.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error.message);
+    return res.status(500).json({ error: error.message || "Failed to update profile." });
+  }
+});
+
+// PATCH /api/profile/password
+router.patch("/profile/password", authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ error: "Current and new passwords are required." });
+    if (newPassword.length < 8)
+      return res.status(400).json({ error: "New password must be at least 8 characters." });
+    if (currentPassword === newPassword)
+      return res.status(400).json({ error: "New password must differ from current password." });
+
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) return res.status(404).json({ error: "User not found." });
+
+    const isValid = await user.comparePassword(currentPassword);
+    if (!isValid) return res.status(401).json({ error: "Current password is incorrect." });
+
+    user.password = newPassword; // pre-save hook hashes it
+    await user.save();
+
+    return res.json({ message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Change password error:", error.message);
+    return res.status(500).json({ error: error.message || "Failed to update password." });
+  }
+});
+
+// ── Usage & Alerts ────────────────────────────────────────────────────────────
 
 router.post("/upload", authenticate, uploadUsage);
 router.get("/usage", authenticate, getUsage);
